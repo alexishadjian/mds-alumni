@@ -1,0 +1,50 @@
+---
+description: Contexte global du projet MDS Alumni — stack, rôles, périmètre MVP/V2
+alwaysApply: true
+---
+
+# MDS Alumni
+
+Site alumni pour **My Digital School** (un seul campus).
+Design minimal et moderne, couleurs blanc et bleu MDS, typographie Geist.
+
+## Stack
+
+Next.js 16 (App Router, RSC) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui · Supabase (PostgreSQL + Auth + Storage) · Vercel
+
+## Rôles
+
+| Rôle | Accès |
+|------|-------|
+| **Admin** | Accès total, gestion utilisateurs et contenus |
+| **Alumni** | Profil complet, annuaire, événements |
+| **Visiteur** (non connecté) | Annuaire lecture seule (données publiques) |
+
+## Périmètre
+
+**MVP** : Auth + onboarding (import CSV, invitations, activation), annuaire (page d'accueil) avec recherche/filtres, profils avec RGPD, back-office admin (membres, promotions, programmes, import).
+
+**V2** : Job board, événements, actualités, offres privilèges, badge mentor, messagerie contact, stats admin.
+
+## Structure
+
+```
+src/app/(public)/    → login, activate, forgot/reset-password
+src/app/(app)/       → profile/edit (authentifié)
+src/app/(admin)/     → admin/* (rôle admin requis)
+src/app/profile/[id] → profil public
+src/app/api/         → auth/activate, auth/callback, import/csv, import/send-invitations
+src/components/      → ui/, layout/, directory/, profile/, admin/, shared/
+src/lib/supabase/    → client.ts (browser), server.ts (SSR), admin.ts (service role)
+src/middleware.ts     → protection des routes par rôle
+```
+
+## Documentation détaillée
+
+Les fichiers `docs/` contiennent les specs complètes — les consulter quand besoin de détails :
+- `docs/features.md` — Features et user stories
+- `docs/database.md` — Schéma DB détaillé, RLS policies
+- `docs/db-schema.md` — SQL des tables
+- `docs/pages.md` — Routes et pages
+- `docs/architecture.md` — Stack, structure, conventions
+- `docs/roadmap.md` — Roadmap et tâches

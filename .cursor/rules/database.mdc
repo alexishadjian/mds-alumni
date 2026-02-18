@@ -1,0 +1,50 @@
+---
+description: Schéma Supabase, tables, RLS et clients pour MDS Alumni
+alwaysApply: false
+---
+
+# Base de données Supabase
+
+## Tables
+
+| Table | Clé | Description |
+|-------|-----|-------------|
+| `profiles` | uuid (FK → auth.users) | Profil étendu, privacy_settings JSONB |
+| `promotion_year` | bigint identity | Années de promotion |
+| `programs` | bigint identity | Filières (name, slug) |
+| `jobs` (V2) | uuid | Offres d'emploi (FK → profiles) |
+| `events` (V2) | uuid | Événements école/alumni |
+| `student_bonus` (V2) | uuid | Offres privilèges partenaires |
+
+## Relations
+
+```
+auth.users ← profiles → promotion_year
+                      → programs
+jobs → profiles (via user_id)
+```
+
+## Clients Supabase
+
+| Fichier | Usage |
+|---------|-------|
+| `lib/supabase/client.ts` | Client browser (composants client) |
+| `lib/supabase/server.ts` | Client server avec cookies (RSC, Server Actions) |
+| `lib/supabase/admin.ts` | Client service role (import CSV, onboarding) |
+
+## RLS Policies
+
+- **profiles** : SELECT public, UPDATE par propriétaire ou admin, INSERT service role, DELETE admin
+- **promotion_year / programs** : SELECT public, mutations admin only
+- **jobs / events / student_bonus** : SELECT authentifié, mutations auteur ou admin
+
+## Privacy Settings (JSONB dans profiles)
+
+Niveaux : `"public"` | `"community"` | `"private"`
+Champs : email_visibility, phone_visibility, linkedin_visibility, city_visibility, company_visibility
+
+## Colonnes onboarding à ajouter (profiles)
+
+- `is_activated` (boolean, default false)
+- `activation_token` (text, unique)
+- `invitation_sent_at` (timestamptz)

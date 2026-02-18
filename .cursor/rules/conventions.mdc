@@ -1,0 +1,39 @@
+---
+description: Conventions de code Next.js/React/TypeScript pour MDS Alumni
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Conventions
+
+## Nommage
+
+- Fichiers/dossiers : `kebab-case` (alumni-card.tsx, use-auth.ts)
+- Composants : `PascalCase` (AlumniCard, ProfileForm)
+- Fonctions/variables : `camelCase` (getProfile, isAuthenticated)
+- Types/Interfaces : `PascalCase` (Profile, PrivacySettings)
+- Constantes : `UPPER_SNAKE_CASE` (USER_ROLES, VISIBILITY_LEVELS)
+
+## Composants React
+
+- **Server Components par défaut.** `"use client"` uniquement pour interactivité, hooks, événements DOM.
+- Un composant = un fichier.
+- Props typées avec `interface`.
+
+## Data Fetching
+
+- Server Components : client Supabase server (`lib/supabase/server.ts`)
+- Mutations : Server Actions Next.js
+- Retour des Server Actions : `{ success: boolean, error?: string, data?: T }`
+
+## Gestion d'erreurs
+
+- Fichiers `error.tsx` et `not-found.tsx` dans chaque groupe de routes.
+
+## Environnement
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
