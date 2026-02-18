@@ -6,7 +6,14 @@ alwaysApply: true
 # MDS Alumni
 
 Site alumni pour **My Digital School** (un seul campus).
-Design minimal et moderne, couleurs blanc et bleu MDS, typographie Geist.
+Design minimal et moderne, couleurs blanc et bleu MDS.
+Bleu : #2CB8C5
+Blanc : #FFF
+Noir : #3C3C3B
+Violet : #662483
+
+Typographie titre : Bricoloage Grotesque
+Typographie paragraphe : Inter
 
 ## Stack
 
