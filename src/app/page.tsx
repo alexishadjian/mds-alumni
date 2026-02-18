@@ -1,4 +1,4 @@
-import { signOut } from '@/app/api/auth/route';
+import { signOut } from '@/lib/actions/auth';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import Image from 'next/image';

@@ -23,7 +23,7 @@ alwaysApply: false
 ## Data Fetching
 
 - Server Components : client Supabase server (`lib/supabase/server.ts`)
-- Mutations : Server Actions Next.js
+- Mutations : Server Actions Next.js (dans `lib/actions/`)
 - Retour des Server Actions : `{ success: boolean, error?: string, data?: T }`
 
 ## Gestion d'erreurs

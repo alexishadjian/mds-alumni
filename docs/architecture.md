@@ -68,6 +68,8 @@ src/
 │   └── shared/                   # Composants partagés (Pagination, EmptyState, etc.)
 │
 ├── lib/
+│   ├── actions/
+│   │   └── auth.ts               # Server Actions auth (signIn, signUp, signOut)
 │   ├── supabase/
 │   │   ├── client.ts             # Client Supabase (browser)
 │   │   ├── server.ts             # Client Supabase (server, cookies)
@@ -102,7 +104,7 @@ src/
 
 ### Data Fetching
 - **Server Components** : Fetch via le client Supabase server (`lib/supabase/server.ts`).
-- **Mutations** : Server Actions de Next.js.
+- **Mutations** : Server Actions de Next.js (dans `lib/actions/`).
 - **Client Components** : Via hooks custom si nécessaire.
 
 ### Auth & Middleware

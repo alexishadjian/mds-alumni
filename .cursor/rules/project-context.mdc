@@ -35,6 +35,7 @@ src/app/(admin)/     → admin/* (rôle admin requis)
 src/app/profile/[id] → profil public
 src/app/api/         → auth/activate, auth/callback, import/csv, import/send-invitations
 src/components/      → ui/, layout/, directory/, profile/, admin/, shared/
+src/lib/actions/     → Server Actions (auth.ts, etc.)
 src/lib/supabase/    → client.ts (browser), server.ts (SSR), admin.ts (service role)
 src/middleware.ts     → protection des routes par rôle
 ```

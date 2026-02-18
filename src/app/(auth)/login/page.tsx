@@ -1,4 +1,4 @@
-import { signIn } from '@/app/api/auth/route';
+import { signIn } from '@/lib/actions/auth';
 import Link from 'next/link';
 
 type Props = { searchParams: Promise<{ error?: string }> };
