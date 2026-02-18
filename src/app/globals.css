@@ -1,35 +1,5 @@
 @import "tailwindcss";
 
-/* Bricolage Grotesque - Tailwind: font-light(300), font-normal(400), font-semibold(600), font-bold(700) */
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("/fonts/BricolageGrotesque-Light.ttf") format("truetype");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("/fonts/BricolageGrotesque-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("/fonts/BricolageGrotesque-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("/fonts/BricolageGrotesque-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --background: #fff;
   --foreground: #3c3c3b;
@@ -46,8 +16,9 @@
   --color-mds-white: var(--mds-white);
   --color-mds-black: var(--mds-black);
   --color-mds-violet: var(--mds-violet);
-  --font-bricolage-grotesque: "Bricolage Grotesque", system-ui, sans-serif;
-  --font-sans: var(--font-bricolage-grotesque);
+  --font-bricolage: var(--font-bricolage);
+  --font-inter: var(--font-inter);
+  --font-sans: var(--font-bricolage);
 }
 
 body {
