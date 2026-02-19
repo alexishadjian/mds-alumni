@@ -1,6 +1,6 @@
-firstname,lastname,promotion_name,promotion_year,role,email
-Juliette,Noel,MDS Design,2021,alumni,juliette.noel@example.com
-Maxime,Chevalier,MDS Design,2021,student,maxime.chevalier@example.com
-Sofia,Lopez,MDS Business,2020,alumni,sofia.lopez@example.com
-Hugo,Renard,MDS Business,2020,student,hugo.renard@example.com
-Manon,Fabre,MDS Cyber,2025,student,manon.fabre@example.com
+firstname,lastname,promotion_name,promotion_year,role,email,linkedin_pseudo
+Juliette,Noel,MDS Design,2021,alumni,juliette.noel@example.com,juliette-noel
+Maxime,Chevalier,MDS Design,2021,student,maxime.chevalier@example.com,
+Sofia,Lopez,MDS Business,2020,alumni,sofia.lopez@example.com,sofia-lopez
+Hugo,Renard,MDS Business,2020,student,hugo.renard@example.com,
+Manon,Fabre,MDS Cyber,2025,student,manon.fabre@example.com,manon-fabre

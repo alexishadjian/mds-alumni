@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Search, Upload, Users, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Users, AlertTriangle, CheckCircle2, Linkedin, FileSpreadsheet, ArrowUpFromLine, X } from 'lucide-react';
 import { MemberDialog } from './member-dialog';
 import { deleteMember, importMembersCsv, previewMembersCsv } from '@/lib/actions/members';
 import {
@@ -23,6 +23,7 @@ interface Member {
   first_name: string | null;
   last_name: string | null;
   role: string;
+  linkedin_pseudo: string | null;
   promotion_year: { id: number; year: number; label: string | null; color: string | null } | null;
   created_at: string;
 }
@@ -224,6 +225,9 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
               <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
                 Promotion
               </th>
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                LinkedIn
+              </th>
               <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
                 Actions
               </th>
@@ -232,7 +236,7 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
           <tbody className="divide-y divide-black/4">
             {members.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-16 text-center">
+                <td colSpan={5} className="py-16 text-center">
                   <Users className="mx-auto mb-3 size-8 text-[#3C3C3B]/15" />
                   <p className="text-sm text-[#3C3C3B]/40">
                     {search ? 'Aucun résultat pour cette recherche.' : 'Aucun membre pour le moment.'}
@@ -285,6 +289,21 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
                       )}
                     </td>
                     <td className="px-4 py-3.5">
+                      {member.linkedin_pseudo ? (
+                        <a
+                          href={`https://linkedin.com/in/${member.linkedin_pseudo}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-[#0077B5] hover:underline"
+                        >
+                          <Linkedin className="size-3.5" />
+                          {member.linkedin_pseudo}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-[#3C3C3B]/25">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5">
                       <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
                           onClick={() => handleEdit(member)}
@@ -311,6 +330,7 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
       </div>
 
       <MemberDialog
+        key={editingMember?.id ?? 'new'}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         member={editingMember}
@@ -319,96 +339,165 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
 
       {/* Import CSV dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="font-bricolage text-xl">Importer des membres</DialogTitle>
-            <DialogDescription className="text-xs">
-              Colonnes attendues :{' '}
-              <code className="rounded bg-[#f8f9fc] px-1 py-0.5 font-mono text-[#662483]">
-                firstname, lastname, promotion_name, promotion_year, role, email
-              </code>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="members_csv" className="text-xs font-bold uppercase tracking-wider text-[#3C3C3B]/50">
-                Fichier CSV
-              </Label>
-              <Input
-                id="members_csv"
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => handleCsvSelection(e.target.files?.[0] ?? null)}
-                className="cursor-pointer rounded-xl border-black/8 bg-[#f8f9fc] text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[#2CB8C5]/10 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#2CB8C5]"
-              />
-              <p className="text-xs text-[#3C3C3B]/40">
-                Rôles autorisés : <strong>student</strong>, <strong>alumni</strong>.
-              </p>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg sm:rounded-2xl">
+          {/* Header */}
+          <div className="relative border-b border-black/5 bg-linear-to-b from-[#f8f9fc] to-white px-6 pb-5 pt-6">
+            <div className="absolute -top-12 -right-12 size-32 rounded-full bg-[#2CB8C5]/6 blur-2xl" />
+            <div className="relative flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#2CB8C5] to-[#2CB8C5]/80 shadow-lg shadow-[#2CB8C5]/20">
+                <FileSpreadsheet className="size-5 text-white" />
+              </div>
+              <div>
+                <DialogHeader className="space-y-0 text-left">
+                  <DialogTitle className="font-bricolage text-lg font-bold text-[#3C3C3B]">
+                    Importer des membres
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 text-xs leading-relaxed text-[#3C3C3B]/45">
+                    Colonnes attendues : <code className="rounded-md bg-[#3C3C3B]/5 px-1.5 py-0.5 font-mono text-[10px] text-[#662483]">firstname, lastname, promotion_name, promotion_year, role, email, linkedin_pseudo</code>
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
             </div>
+          </div>
 
+          {/* Body */}
+          <div className="space-y-4 px-6 py-5">
+            {/* Drop zone */}
+            {!csvFile ? (
+              <label
+                htmlFor="members_csv"
+                className="group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#2CB8C5]/25 bg-[#2CB8C5]/3 px-6 py-8 transition-all duration-200 hover:border-[#2CB8C5]/50 hover:bg-[#2CB8C5]/6"
+              >
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-[#2CB8C5]/10 transition-colors group-hover:bg-[#2CB8C5]/15">
+                  <ArrowUpFromLine className="size-5 text-[#2CB8C5]" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-[#3C3C3B]/70">
+                    Cliquez pour sélectionner un fichier
+                  </p>
+                  <p className="mt-1 text-xs text-[#3C3C3B]/35">CSV uniquement</p>
+                </div>
+                <Input
+                  id="members_csv"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => handleCsvSelection(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border border-black/6 bg-[#f8f9fc] px-4 py-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#662483]/10">
+                  <FileSpreadsheet className="size-4 text-[#662483]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#3C3C3B]">{csvFile.name}</p>
+                  <p className="text-xs text-[#3C3C3B]/35">
+                    {(csvFile.size / 1024).toFixed(1)} Ko
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCsvFile(null);
+                    setPreviewResult(null);
+                    setImportError(null);
+                    setImportSuccess(null);
+                  }}
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[#3C3C3B]/30 transition-colors hover:bg-red-50 hover:text-red-500"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Loading */}
             {isPreviewingImport && (
-              <div className="flex items-center gap-3 rounded-xl border border-black/6 bg-[#f8f9fc] p-4 text-sm text-[#3C3C3B]/50">
-                <div className="size-4 animate-spin rounded-full border-2 border-[#2CB8C5]/30 border-t-[#2CB8C5]" />
-                Analyse du fichier en cours…
+              <div className="flex items-center justify-center gap-3 py-2">
+                <div className="size-4 animate-spin rounded-full border-2 border-[#2CB8C5]/20 border-t-[#2CB8C5]" />
+                <span className="text-sm text-[#3C3C3B]/45">Analyse du fichier…</span>
               </div>
             )}
 
+            {/* Error */}
             {importError && (
-              <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+              <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50/80 px-4 py-3.5">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
-                <p className="text-sm text-red-700">{importError}</p>
+                <p className="text-sm leading-relaxed text-red-700">{importError}</p>
               </div>
             )}
 
+            {/* Success */}
             {importSuccess && (
-              <div className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3.5">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
-                <p className="text-sm text-emerald-700">{importSuccess}</p>
+                <p className="text-sm leading-relaxed text-emerald-700">{importSuccess}</p>
               </div>
             )}
 
+            {/* Preview */}
             {previewResult && (
-              <div className="space-y-3 rounded-xl border border-black/6 bg-[#f8f9fc] p-4 text-sm">
-                <p className="font-semibold text-[#3C3C3B]">Prévisualisation</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'Lignes détectées', value: previewResult.totalRows },
-                    { label: 'Lignes valides', value: previewResult.validRows, color: 'text-emerald-600' },
-                    { label: 'Lignes invalides', value: previewResult.invalidRows, color: previewResult.invalidRows > 0 ? 'text-red-600' : undefined },
-                    { label: 'Alumni', value: previewResult.alumniFound, color: 'text-[#2CB8C5]' },
-                    { label: 'Étudiants', value: previewResult.studentsFound, color: 'text-[#662483]' },
-                  ].map(({ label, value, color }) => (
-                    <div key={label} className="flex items-center justify-between rounded-lg border border-black/5 bg-white px-3 py-2">
-                      <span className="text-xs text-[#3C3C3B]/50">{label}</span>
-                      <span className={`text-sm font-bold ${color ?? 'text-[#3C3C3B]'}`}>{value}</span>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#3C3C3B]/40">
+                  Prévisualisation
+                </p>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-black/5 bg-[#f8f9fc] p-3 text-center">
+                    <p className="font-bricolage text-xl font-bold text-[#3C3C3B]">{previewResult.totalRows}</p>
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#3C3C3B]/35">Total</p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
+                    <p className="font-bricolage text-xl font-bold text-emerald-600">{previewResult.validRows}</p>
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600/50">Valides</p>
+                  </div>
+                  <div className={`rounded-xl border p-3 text-center ${previewResult.invalidRows > 0 ? 'border-red-100 bg-red-50/50' : 'border-black/5 bg-[#f8f9fc]'}`}>
+                    <p className={`font-bricolage text-xl font-bold ${previewResult.invalidRows > 0 ? 'text-red-500' : 'text-[#3C3C3B]/30'}`}>{previewResult.invalidRows}</p>
+                    <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${previewResult.invalidRows > 0 ? 'text-red-500/50' : 'text-[#3C3C3B]/25'}`}>Invalides</p>
+                  </div>
                 </div>
 
+                {/* Role breakdown */}
+                <div className="flex gap-2">
+                  <div className="flex flex-1 items-center gap-2.5 rounded-xl border border-[#2CB8C5]/15 bg-[#2CB8C5]/4 px-3 py-2.5">
+                    <span className="size-2 rounded-full bg-[#2CB8C5]" />
+                    <span className="text-xs text-[#3C3C3B]/50">Alumni</span>
+                    <span className="ml-auto text-sm font-bold text-[#2CB8C5]">{previewResult.alumniFound}</span>
+                  </div>
+                  <div className="flex flex-1 items-center gap-2.5 rounded-xl border border-[#662483]/15 bg-[#662483]/4 px-3 py-2.5">
+                    <span className="size-2 rounded-full bg-[#662483]" />
+                    <span className="text-xs text-[#3C3C3B]/50">Étudiants</span>
+                    <span className="ml-auto text-sm font-bold text-[#662483]">{previewResult.studentsFound}</span>
+                  </div>
+                </div>
+
+                {/* Warning: missing promotions */}
                 {previewResult.rowsWithoutPromotion > 0 && (
-                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                  <div className="flex items-start gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/60 px-4 py-3.5">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                     <div>
                       <p className="text-sm font-medium text-amber-800">
-                        {previewResult.rowsWithoutPromotion} membre(s) seront créés sans promotion.
+                        {previewResult.rowsWithoutPromotion} membre{previewResult.rowsWithoutPromotion > 1 ? 's' : ''} sans promotion
                       </p>
-                      <p className="mt-0.5 text-xs text-amber-700">
-                        Introuvables : {previewResult.missingPromotionNames.join(', ')}.
+                      <p className="mt-0.5 text-xs text-amber-600/70">
+                        Introuvables : {previewResult.missingPromotionNames.join(', ')}
                       </p>
                     </div>
                   </div>
                 )}
 
+                {/* Validation errors */}
                 {previewResult.errors.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#3C3C3B]/50">
-                      Erreurs de validation
+                  <div className="space-y-2 rounded-xl border border-black/5 bg-[#f8f9fc] p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#3C3C3B]/35">
+                      Erreurs ({previewResult.errors.length})
                     </p>
-                    <ul className="max-h-32 space-y-1 overflow-auto">
+                    <ul className="max-h-28 space-y-1 overflow-auto">
                       {previewResult.errors.map((item) => (
-                        <li key={item} className="text-xs text-[#3C3C3B]/60">
-                          · {item}
+                        <li key={item} className="text-xs leading-relaxed text-[#3C3C3B]/50">
+                          <span className="mr-1.5 inline-block size-1 rounded-full bg-red-400/60 align-middle" />
+                          {item}
                         </li>
                       ))}
                     </ul>
@@ -418,9 +507,10 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
             )}
           </div>
 
-          <DialogFooter>
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 border-t border-black/5 bg-[#f8f9fc]/60 px-6 py-4">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 setImportDialogOpen(false);
                 setImportError(null);
@@ -429,7 +519,7 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
                 setCsvFile(null);
               }}
               disabled={isImporting || isPreviewingImport}
-              className="rounded-xl border-black/8"
+              className="rounded-xl text-[#3C3C3B]/50 hover:text-[#3C3C3B]"
             >
               Fermer
             </Button>
@@ -442,15 +532,26 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
                 !previewResult ||
                 previewResult.validRows === 0
               }
-              className="rounded-xl bg-[#2CB8C5] font-semibold text-white hover:bg-[#2CB8C5]/90"
+              className="gap-2 rounded-xl bg-[#2CB8C5] px-5 font-semibold text-white shadow-sm shadow-[#2CB8C5]/20 hover:bg-[#2CB8C5]/90 hover:shadow-md hover:shadow-[#2CB8C5]/25 disabled:opacity-40 disabled:shadow-none"
             >
-              {isImporting
-                ? 'Import en cours…'
-                : previewResult?.rowsWithoutPromotion
-                  ? 'Importer quand même'
-                  : 'Importer'}
+              {isImporting ? (
+                <>
+                  <div className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Import en cours…
+                </>
+              ) : previewResult?.rowsWithoutPromotion ? (
+                <>
+                  <Upload className="size-3.5" />
+                  Importer quand même
+                </>
+              ) : (
+                <>
+                  <Upload className="size-3.5" />
+                  Importer {previewResult ? `(${previewResult.validRows})` : ''}
+                </>
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

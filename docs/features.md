@@ -85,7 +85,7 @@ L'annuaire est la page d'accueil du site. Il est accessible sans connexion en mo
 - **Promotions** : CRUD sur les promotions (nom, année).
 - **Filières** : CRUD sur les filières / spécialités.
 - **Membres** : CRUD utilisateurs, blocage d'accès.
-- **Import CSV (dans l'onglet Membres)** : Import en masse avec les colonnes `firstname`, `lastname`, `promotion_name`, `promotion_year`, `role`, `email`, avec prévisualisation automatique puis confirmation manuelle de l'import. Rôles autorisés : `student`, `alumni`. Si une promotion du CSV n'existe pas, un avertissement est affiché et les membres concernés peuvent être importés sans promotion.
+- **Import CSV (dans l'onglet Membres)** : Import en masse avec les colonnes `firstname`, `lastname`, `promotion_name`, `promotion_year`, `role`, `email`, `linkedin_pseudo`, avec prévisualisation automatique puis confirmation manuelle de l'import. Rôles autorisés : `student`, `alumni`. Si une promotion du CSV n'existe pas, un avertissement est affiché et les membres concernés peuvent être importés sans promotion.
 
 ---
 
