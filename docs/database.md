@@ -94,6 +94,7 @@ Valeurs possibles pour chaque champ : `"public"`, `"community"`, `"private"`.
 |---------|------|------------|-------------|
 | id | bigint | PK, GENERATED ALWAYS AS IDENTITY | Identifiant |
 | year | integer | NOT NULL, UNIQUE | Année de promotion |
+| label | text | | Nom / label de la promotion |
 | created_at | timestamptz | DEFAULT now() | Date de création |
 
 ---
