@@ -18,13 +18,14 @@ export async function getPromotions() {
 export async function createPromotion(formData: FormData) {
   const year = Number(formData.get('year'));
   const label = (formData.get('label') as string)?.trim() || null;
+  const color = (formData.get('color') as string)?.trim() || null;
 
   if (!year || year < 2000 || year > 2100) {
     return { success: false as const, error: 'Année invalide' };
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('promotion_year').insert({ year, label });
+  const { error } = await supabase.from('promotion_year').insert({ year, label, color });
 
   if (error) {
     if (error.code === '23505') {
@@ -40,6 +41,7 @@ export async function createPromotion(formData: FormData) {
 export async function updatePromotion(id: number, formData: FormData) {
   const year = Number(formData.get('year'));
   const label = (formData.get('label') as string)?.trim() || null;
+  const color = (formData.get('color') as string)?.trim() || null;
 
   if (!year || year < 2000 || year > 2100) {
     return { success: false as const, error: 'Année invalide' };
@@ -48,7 +50,7 @@ export async function updatePromotion(id: number, formData: FormData) {
   const supabase = createClient(await cookies());
   const { error } = await supabase
     .from('promotion_year')
-    .update({ year, label })
+    .update({ year, label, color })
     .eq('id', id);
 
   if (error) {

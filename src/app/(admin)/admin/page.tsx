@@ -11,6 +11,7 @@ interface DashboardMember {
   last_name: string | null;
   role: string;
   created_at: string;
+  promotion_year: { color: string | null } | { color: string | null }[] | null;
 }
 
 const getInitials = (member: DashboardMember) => {
@@ -27,15 +28,18 @@ const formatMemberName = (member: DashboardMember) => {
   return member.email;
 };
 
-const AVATAR_COLORS = [
-  { bg: 'bg-[#2CB8C5]/12', text: 'text-[#2CB8C5]' },
-  { bg: 'bg-[#662483]/12', text: 'text-[#662483]' },
-  { bg: 'bg-amber-500/12', text: 'text-amber-600' },
-  { bg: 'bg-emerald-500/12', text: 'text-emerald-600' },
-];
+const getPromotionColor = (member: DashboardMember): string | null => {
+  const p = member.promotion_year;
+  if (!p) return null;
+  const obj = Array.isArray(p) ? p[0] : p;
+  return obj?.color ?? null;
+};
 
-const getAvatarColor = (id: string) =>
-  AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length];
+const getAvatarStyle = (member: DashboardMember) => {
+  const color = getPromotionColor(member);
+  if (!color) return { backgroundColor: 'rgba(156,163,175,0.12)', color: '#9ca3af' };
+  return { backgroundColor: `${color}18`, color };
+};
 
 export default async function AdminPage() {
   const supabase = createClient(await cookies());
@@ -53,7 +57,7 @@ export default async function AdminPage() {
     supabase.from('promotion_year').select('*', { count: 'exact', head: true }),
     supabase
       .from('profiles')
-      .select('id, email, first_name, last_name, role, created_at')
+      .select('id, email, first_name, last_name, role, created_at, promotion_year(color)')
       .neq('role', 'admin')
       .order('created_at', { ascending: false })
       .limit(5),
@@ -168,7 +172,7 @@ export default async function AdminPage() {
               </div>
             ) : (
               (recentMembers ?? []).map((member) => {
-                const colors = getAvatarColor(member.id);
+                const avatarStyle = getAvatarStyle(member as unknown as DashboardMember);
                 const isAlumni = member.role === 'alumni';
                 return (
                   <div
@@ -176,13 +180,14 @@ export default async function AdminPage() {
                     className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-[#f8f9fc]"
                   >
                     <div
-                      className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${colors.bg} ${colors.text}`}
+                      className="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                      style={avatarStyle}
                     >
-                      {getInitials(member)}
+                      {getInitials(member as unknown as DashboardMember)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-[#3C3C3B]">
-                        {formatMemberName(member)}
+                        {formatMemberName(member as unknown as DashboardMember)}
                       </p>
                       <p className="truncate text-xs text-[#3C3C3B]/40">{member.email}</p>
                     </div>

@@ -12,7 +12,7 @@ export default async function MembersPage({ searchParams }: Props) {
 
   let query = supabase
     .from('profiles')
-    .select('*, promotion_year(id, year, label)')
+    .select('*, promotion_year(id, year, label, color)')
     .neq('role', 'admin')
     .order('created_at', { ascending: false });
 
@@ -26,7 +26,7 @@ export default async function MembersPage({ searchParams }: Props) {
 
   const { data: promotions } = await supabase
     .from('promotion_year')
-    .select('id, year, label')
+    .select('id, year, label, color')
     .order('year', { ascending: false });
 
   return (

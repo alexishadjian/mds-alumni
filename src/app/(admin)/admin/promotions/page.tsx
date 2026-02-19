@@ -6,7 +6,7 @@ export default async function PromotionsPage() {
   const supabase = createClient(await cookies());
   const { data: promotions } = await supabase
     .from('promotion_year')
-    .select('*')
+    .select('id, year, label, color, created_at')
     .order('year', { ascending: false });
 
   return (

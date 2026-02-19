@@ -23,7 +23,7 @@ interface Member {
   first_name: string | null;
   last_name: string | null;
   role: string;
-  promotion_year: { id: number; year: number; label: string | null } | null;
+  promotion_year: { id: number; year: number; label: string | null; color: string | null } | null;
   created_at: string;
 }
 
@@ -31,6 +31,7 @@ interface Promotion {
   id: number;
   year: number;
   label: string | null;
+  color: string | null;
 }
 
 interface MembersTableProps {
@@ -39,16 +40,13 @@ interface MembersTableProps {
   search?: string;
 }
 
-const AVATAR_COLORS = [
-  { bg: 'bg-[#2CB8C5]/12', text: 'text-[#2CB8C5]' },
-  { bg: 'bg-[#662483]/12', text: 'text-[#662483]' },
-  { bg: 'bg-amber-500/12', text: 'text-amber-600' },
-  { bg: 'bg-emerald-500/12', text: 'text-emerald-600' },
-  { bg: 'bg-rose-500/12', text: 'text-rose-600' },
-];
+const GREY = { bg: 'rgba(156,163,175,0.12)', text: '#9ca3af' };
 
-const getAvatarColor = (id: string) =>
-  AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length];
+function getPromotionStyle(member: Member) {
+  const color = member.promotion_year?.color;
+  if (!color) return GREY;
+  return { bg: `${color}18`, text: color };
+}
 
 export function MembersTable({ members, promotions, search }: MembersTableProps) {
   const router = useRouter();
@@ -244,7 +242,7 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
             ) : (
               members.map((member) => {
                 const isAlumni = member.role === 'alumni';
-                const colors = getAvatarColor(member.id);
+                const { bg, text } = getPromotionStyle(member);
                 return (
                   <tr
                     key={member.id}
@@ -253,7 +251,8 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold ${colors.bg} ${colors.text}`}
+                          className="flex size-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold"
+                          style={{ backgroundColor: bg, color: text }}
                         >
                           {getInitials(member)}
                         </div>

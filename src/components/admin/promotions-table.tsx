@@ -18,6 +18,7 @@ interface Promotion {
   id: number;
   year: number;
   label: string | null;
+  color: string | null;
   created_at: string;
 }
 
@@ -84,6 +85,9 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
                 Année
               </th>
               <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                Couleur
+              </th>
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
                 Créée le
               </th>
               <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
@@ -94,7 +98,7 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
           <tbody className="divide-y divide-black/4">
             {promotions.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-16 text-center">
+                <td colSpan={5} className="py-16 text-center">
                   <CalendarDays className="mx-auto mb-3 size-8 text-[#3C3C3B]/15" />
                   <p className="text-sm text-[#3C3C3B]/40">Aucune promotion pour le moment.</p>
                 </td>
@@ -107,8 +111,23 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
                 >
                   <td className="px-6 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#662483]/10">
-                        <CalendarDays className="size-3.5 text-[#662483]" />
+                      {/* Color swatch as avatar */}
+                      <div
+                        className="flex size-8 shrink-0 items-center justify-center rounded-xl text-white"
+                        style={
+                          promotion.color
+                            ? { backgroundColor: promotion.color }
+                            : { backgroundColor: '#e5e7eb' }
+                        }
+                      >
+                        <CalendarDays
+                          className="size-3.5"
+                          style={
+                            promotion.color
+                              ? { color: 'rgba(255,255,255,0.85)' }
+                              : { color: '#9ca3af' }
+                          }
+                        />
                       </div>
                       <span className="font-semibold text-[#3C3C3B]">
                         {promotion.label || <span className="font-normal text-[#3C3C3B]/30">—</span>}
@@ -116,9 +135,37 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="inline-flex items-center rounded-full bg-[#662483]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#662483]">
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                      style={
+                        promotion.color
+                          ? {
+                              backgroundColor: `${promotion.color}18`,
+                              color: promotion.color,
+                            }
+                          : {
+                              backgroundColor: 'rgba(156,163,175,0.15)',
+                              color: '#6b7280',
+                            }
+                      }
+                    >
                       {promotion.year}
                     </span>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    {promotion.color ? (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="size-5 rounded-md shadow-sm"
+                          style={{ backgroundColor: promotion.color }}
+                        />
+                        <span className="font-mono text-xs text-[#3C3C3B]/50">
+                          {promotion.color}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[#3C3C3B]/25">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3.5 text-sm text-[#3C3C3B]/40">
                     {new Date(promotion.created_at).toLocaleDateString('fr-FR')}
