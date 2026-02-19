@@ -72,6 +72,8 @@ export default async function ProfilePage({ params }: Props) {
   const hasPro = (profile.professional_experiences?.length ?? 0) > 0;
   const hasEdu = (profile.education_experiences?.length ?? 0) > 0;
 
+  const isRestricted = profile.visibility === 'private' || (profile.visibility === 'community' && !user);
+
   return (
     <div className="min-h-screen bg-gray-50/60">
       {/* Hero cover */}
@@ -151,8 +153,29 @@ export default async function ProfilePage({ params }: Props) {
 
         {/* Content */}
         <div className="grid gap-6 pb-16 lg:grid-cols-3">
-          {/* Sidebar */}
-          <div className="space-y-4 lg:col-span-1">
+          {isRestricted && !canEdit ? (
+            <div className="lg:col-span-3">
+              <div className="rounded-3xl bg-white border border-black/6 p-12 text-center shadow-sm">
+                <div className="mx-auto size-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 text-3xl">
+                  🔒
+                </div>
+                <h2 className="text-xl font-bold text-[#3C3C3B] mb-2">Profil privé</h2>
+                <p className="text-[#3C3C3B]/50 max-w-sm mx-auto">
+                  {profile.visibility === 'private' 
+                    ? "Cet utilisateur a choisi de garder son profil privé." 
+                    : "Ce profil est réservé aux membres de la communauté My Digital School. Connectez-vous pour voir les détails."}
+                </p>
+                {profile.visibility === 'community' && !user && (
+                  <Button asChild className="mt-6 rounded-full bg-[#2CB8C5] hover:bg-[#2CB8C5]/90">
+                    <Link href="/login">Se connecter</Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Sidebar */}
+              <div className="space-y-4 lg:col-span-1">
             {profile.bio && (
               <div className="rounded-2xl bg-white border border-black/6 p-5">
                 <h2 className="font-semibold text-sm uppercase tracking-wider mb-3 text-[#3C3C3B]/50">
@@ -253,8 +276,10 @@ export default async function ProfilePage({ params }: Props) {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
+  </div>
+</div>
   );
 }

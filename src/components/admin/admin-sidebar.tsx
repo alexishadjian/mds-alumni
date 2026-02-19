@@ -16,13 +16,15 @@ import {
   SidebarFooter,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { CalendarDays, Users, LayoutDashboard, ArrowLeft } from 'lucide-react';
+import { CalendarDays, Users, LayoutDashboard, ArrowLeft, Briefcase, MessageSquare } from 'lucide-react';
 import { mydigitalschoollogo } from '@/public/assets';
 
 const NAV_ITEMS = [
   { title: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { title: 'Membres', href: '/admin/members', icon: Users },
   { title: 'Promotions', href: '/admin/promotions', icon: CalendarDays },
+  { title: 'Carrière', href: '/admin/jobs', icon: Briefcase },
+  { title: 'Communication', href: '/admin/events', icon: MessageSquare },
 ];
 
 export function AdminSidebar() {

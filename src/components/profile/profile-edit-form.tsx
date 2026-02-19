@@ -399,6 +399,14 @@ export const ProfileEditForm = ({ profile }: Props) => {
             </Field>
           </div>
 
+          <Field label="Visibilité du profil">
+            <select name="visibility" defaultValue={profile.visibility || 'public'} className={INPUT}>
+              <option value="public">Public (Tout le monde peut voir)</option>
+              <option value="community">Communauté (Seulement les connectés)</option>
+              <option value="private">Privé (Nom et poste seulement)</option>
+            </select>
+          </Field>
+
           <Field label="Bio — À propos de toi">
             <textarea
               name="bio"

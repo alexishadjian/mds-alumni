@@ -57,7 +57,7 @@ export default async function AnnuairePage({ searchParams }: Props) {
               <Users className="size-7 text-[#2CB8C5]/60" />
             </div>
             <p className="text-[#3C3C3B]/40 text-lg font-medium">Aucun résultat{q ? ` pour "${q}"` : ''}</p>
-            <p className="text-[#3C3C3B]/30 text-sm mt-1">Essaie avec d'autres mots-clés</p>
+            <p className="text-[#3C3C3B]/30 text-sm mt-1">Essaie avec d&apos;autres mots-clés</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

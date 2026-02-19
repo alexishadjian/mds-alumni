@@ -84,7 +84,7 @@ export const updateProfile = async (profileId: string, data: Partial<Profile> | 
     data instanceof FormData
       ? (() => {
           const SIMPLE = ['first_name', 'last_name', 'bio', 'current_job_title', 'current_company',
-            'current_sector', 'current_contract_type', 'linkedin_url', 'location_city', 'location_country', 'avatar_url'];
+            'current_sector', 'current_contract_type', 'linkedin_url', 'location_city', 'location_country', 'avatar_url', 'visibility'];
           const out: Record<string, unknown> = Object.fromEntries(
             SIMPLE.map((k) => [k, (data.get(k) as string)?.trim() || null])
           );
