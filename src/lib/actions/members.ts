@@ -12,6 +12,7 @@ type MemberCsvRow = {
   promotion_year: string;
   role: string;
   email: string;
+  linkedin_pseudo: string;
 };
 
 type CsvParsedRow = MemberCsvRow & {
@@ -42,6 +43,7 @@ const CSV_HEADERS: Array<keyof MemberCsvRow> = [
   'promotion_year',
   'role',
   'email',
+  'linkedin_pseudo',
 ];
 
 function parseCsvLine(line: string): string[] {
@@ -123,6 +125,7 @@ function parseMembersCsv(csvContent: string) {
       promotion_year: values[columnIndex.promotion_year]?.trim() ?? '',
       role: values[columnIndex.role]?.trim().toLowerCase() ?? '',
       email: values[columnIndex.email]?.trim().toLowerCase() ?? '',
+      linkedin_pseudo: values[columnIndex.linkedin_pseudo]?.trim() ?? '',
     });
   }
 
@@ -191,6 +194,7 @@ export async function createMember(formData: FormData) {
   const firstName = (formData.get('first_name') as string)?.trim() || null;
   const lastName = (formData.get('last_name') as string)?.trim() || null;
   const role = (formData.get('role') as string) || 'student';
+  const linkedinPseudo = (formData.get('linkedin_pseudo') as string)?.trim() || null;
   const promotionYearId = formData.get('promotion_year_id')
     ? Number(formData.get('promotion_year_id'))
     : null;
@@ -221,6 +225,7 @@ export async function createMember(formData: FormData) {
       last_name: lastName,
       role,
       promotion_year_id: promotionYearId,
+      linkedin_pseudo: linkedinPseudo,
     });
 
     if (profileError) {
@@ -238,26 +243,32 @@ export async function updateMember(id: string, formData: FormData) {
   const firstName = (formData.get('first_name') as string)?.trim() || null;
   const lastName = (formData.get('last_name') as string)?.trim() || null;
   const role = (formData.get('role') as string) || 'student';
+  const linkedinPseudo = (formData.get('linkedin_pseudo') as string)?.trim() || null;
   const promotionYearId = formData.get('promotion_year_id')
     ? Number(formData.get('promotion_year_id'))
     : null;
 
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      first_name: firstName,
-      last_name: lastName,
-      role,
-      promotion_year_id: promotionYearId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id);
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('profiles')
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        role,
+        promotion_year_id: promotionYearId,
+        linkedin_pseudo: linkedinPseudo,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
 
-  if (error) return { success: false as const, error: error.message };
+    if (error) return { success: false as const, error: error.message };
 
-  revalidatePath('/admin/members');
-  return { success: true as const };
+    revalidatePath('/admin/members');
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: 'SUPABASE_SERVICE_ROLE_KEY non configurée. Ajoutez-la dans .env' };
+  }
 }
 
 export async function deleteMember(id: string) {
@@ -382,6 +393,7 @@ export async function importMembersCsv(csvContent: string) {
         last_name: row.lastname || null,
         role: row.normalizedRole,
         promotion_year_id: promotionId,
+        linkedin_pseudo: row.linkedin_pseudo || null,
       });
 
       if (profileError) {

@@ -1,0 +1,6 @@
+firstname,lastname,promotion_name,promotion_year,role,email,linkedin_pseudo
+Clara,Dubois,MDS Dev Web,2023,alumni,clara.dubois+test@example.com,clara-dubois
+Antoine,Leroy,MDS Dev Web,2023,student,antoine.leroy+test@example.com,antoine-leroy-dev
+Amira,Benali,MDS Data,2022,alumni,amira.benali+test@example.com,amira-benali
+Theo,Martin,MDS Marketing,2024,student,theo.martin+test@example.com,
+Lola,Perrin,MDS Data,2022,alumni,lola.perrin+test@example.com,lola-perrin-data

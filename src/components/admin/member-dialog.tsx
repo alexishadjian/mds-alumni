@@ -27,6 +27,7 @@ interface Member {
   first_name: string | null;
   last_name: string | null;
   role: string;
+  linkedin_pseudo: string | null;
   promotion_year: { id: number; year: number; label: string | null } | null;
   created_at: string;
 }
@@ -168,6 +169,24 @@ export function MemberDialog({ open, onOpenChange, member, promotions }: MemberD
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="linkedin_pseudo" className={labelClass}>
+              Pseudo LinkedIn
+            </Label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#3C3C3B]/30 text-sm">
+                linkedin.com/in/
+              </span>
+              <Input
+                id="linkedin_pseudo"
+                name="linkedin_pseudo"
+                placeholder="marie-dupont"
+                defaultValue={member?.linkedin_pseudo ?? ''}
+                className={`${fieldClass} pl-[120px]`}
+              />
             </div>
           </div>
 
