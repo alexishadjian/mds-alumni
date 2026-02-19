@@ -27,13 +27,13 @@ export const getJobById = async (id: string): Promise<Job | null> => {
     isAdminUser = data?.role === 'admin';
   }
 
-  let query = supabase.from('jobs').select('*').eq('id', id).single();
+  let query = supabase.from('jobs').select('*').eq('id', id);
   
   if (!isAdminUser) {
     query = query.eq('is_active', true);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.single();
   
   if (error || !data) return null;
   return data;
