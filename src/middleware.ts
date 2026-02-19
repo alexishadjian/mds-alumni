@@ -22,6 +22,10 @@ export const middleware = async (request: NextRequest) => {
     },
   );
   await supabase.auth.getClaims();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user && request.nextUrl.pathname.startsWith('/profile/edit')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
   return response;
 };
 
