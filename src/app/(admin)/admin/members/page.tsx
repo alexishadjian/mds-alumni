@@ -30,11 +30,14 @@ export default async function MembersPage({ searchParams }: Props) {
     .order('year', { ascending: false });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Membres</h1>
-        <p className="text-sm text-muted-foreground">
-          Gérez les étudiants et alumni.
+        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#2CB8C5]">
+          Administration
+        </p>
+        <h1 className="font-bricolage text-3xl font-bold text-[#3C3C3B]">Membres</h1>
+        <p className="mt-1 text-sm text-[#3C3C3B]/45">
+          Gérez les étudiants et alumni de la communauté.
         </p>
       </div>
       <MembersTable

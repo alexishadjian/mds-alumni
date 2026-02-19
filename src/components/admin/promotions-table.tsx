@@ -1,17 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarDays, AlertTriangle } from 'lucide-react';
 import { PromotionDialog } from './promotion-dialog';
 import { deletePromotion } from '@/lib/actions/promotions';
 import {
@@ -66,64 +57,95 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
 
   return (
     <>
+      {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <Badge variant="secondary">{promotions.length} promotion{promotions.length > 1 ? 's' : ''}</Badge>
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="mr-2 size-4" />
+        <span className="rounded-full bg-[#3C3C3B]/6 px-3 py-1 text-xs font-semibold text-[#3C3C3B]/55">
+          {promotions.length} promotion{promotions.length > 1 ? 's' : ''}
+        </span>
+        <Button
+          onClick={handleCreate}
+          size="sm"
+          className="h-9 gap-1.5 rounded-xl bg-[#662483] text-xs font-bold text-white shadow-sm shadow-[#662483]/20 hover:bg-[#662483]/90 hover:shadow-md hover:shadow-[#662483]/25"
+        >
+          <Plus className="size-3.5" />
           Ajouter une promotion
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Année</TableHead>
-              <TableHead>Date de création</TableHead>
-              <TableHead className="w-24 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Table card */}
+      <div className="overflow-hidden rounded-2xl border border-black/6 bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-black/5 bg-[#f8f9fc]">
+              <th className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                Nom
+              </th>
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                Année
+              </th>
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                Créée le
+              </th>
+              <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.1em] text-[#3C3C3B]/40">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/4">
             {promotions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                  Aucune promotion pour le moment.
-                </TableCell>
-              </TableRow>
+              <tr>
+                <td colSpan={4} className="py-16 text-center">
+                  <CalendarDays className="mx-auto mb-3 size-8 text-[#3C3C3B]/15" />
+                  <p className="text-sm text-[#3C3C3B]/40">Aucune promotion pour le moment.</p>
+                </td>
+              </tr>
             ) : (
               promotions.map((promotion) => (
-                <TableRow key={promotion.id}>
-                  <TableCell className="font-medium">
-                    {promotion.label || <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell>{promotion.year}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(promotion.created_at).toLocaleDateString('fr-FR')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(promotion)}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteTarget(promotion)}
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                <tr
+                  key={promotion.id}
+                  className="group transition-colors hover:bg-[#f8f9fc]"
+                >
+                  <td className="px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#662483]/10">
+                        <CalendarDays className="size-3.5 text-[#662483]" />
+                      </div>
+                      <span className="font-semibold text-[#3C3C3B]">
+                        {promotion.label || <span className="font-normal text-[#3C3C3B]/30">—</span>}
+                      </span>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span className="inline-flex items-center rounded-full bg-[#662483]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#662483]">
+                      {promotion.year}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-sm text-[#3C3C3B]/40">
+                    {new Date(promotion.created_at).toLocaleDateString('fr-FR')}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={() => handleEdit(promotion)}
+                        className="flex size-8 items-center justify-center rounded-lg text-[#3C3C3B]/40 transition-colors hover:bg-[#662483]/10 hover:text-[#662483]"
+                        title="Modifier"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(promotion)}
+                        className="flex size-8 items-center justify-center rounded-lg text-[#3C3C3B]/40 transition-colors hover:bg-red-50 hover:text-red-500"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
       <PromotionDialog
@@ -133,19 +155,36 @@ export function PromotionsTable({ promotions }: PromotionsTableProps) {
       />
 
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Supprimer la promotion {deleteTarget?.year} ?</DialogTitle>
+            <DialogTitle className="font-bricolage text-xl">
+              Supprimer cette promotion ?
+            </DialogTitle>
             <DialogDescription>
-              Cette action est irréversible. Les profils liés à cette promotion ne seront pas supprimés.
+              La promotion <strong>{deleteTarget?.label ?? deleteTarget?.year}</strong> sera
+              supprimée. Les profils liés ne seront pas affectés.
             </DialogDescription>
           </DialogHeader>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+              className="rounded-xl border-black/8"
+            >
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="rounded-xl bg-red-500 font-semibold text-white hover:bg-red-600"
+            >
               {isDeleting ? 'Suppression…' : 'Supprimer'}
             </Button>
           </DialogFooter>

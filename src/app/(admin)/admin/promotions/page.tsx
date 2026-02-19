@@ -10,11 +10,14 @@ export default async function PromotionsPage() {
     .order('year', { ascending: false });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Promotions</h1>
-        <p className="text-sm text-muted-foreground">
-          Gérez les années de promotion.
+        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#662483]">
+          Administration
+        </p>
+        <h1 className="font-bricolage text-3xl font-bold text-[#3C3C3B]">Promotions</h1>
+        <p className="mt-1 text-sm text-[#3C3C3B]/45">
+          Gérez les années de promotion et cohortes.
         </p>
       </div>
       <PromotionsTable promotions={promotions ?? []} />
