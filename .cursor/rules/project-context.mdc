@@ -6,7 +6,14 @@ alwaysApply: true
 # MDS Alumni
 
 Site alumni pour **My Digital School** (un seul campus).
-Design minimal et moderne, couleurs blanc et bleu MDS, typographie Geist.
+Design minimal et moderne, couleurs blanc et bleu MDS.
+Bleu : #2CB8C5
+Blanc : #FFF
+Noir : #3C3C3B
+Violet : #662483
+
+Typographie titre : Bricoloage Grotesque
+Typographie paragraphe : Inter
 
 ## Stack
 
@@ -35,6 +42,7 @@ src/app/(admin)/     → admin/* (rôle admin requis)
 src/app/profile/[id] → profil public
 src/app/api/         → auth/activate, auth/callback, import/csv, import/send-invitations
 src/components/      → ui/, layout/, directory/, profile/, admin/, shared/
+src/lib/actions/     → Server Actions (auth.ts, members.ts, promotions.ts, etc.)
 src/lib/supabase/    → client.ts (browser), server.ts (SSR), admin.ts (service role)
 src/middleware.ts     → protection des routes par rôle
 ```

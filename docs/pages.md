@@ -46,11 +46,10 @@ Layout commun : Sidebar de navigation admin. Accessible uniquement aux utilisate
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/admin/members` | Gestion des membres | Liste, recherche, édition, blocage, suppression |
+| `/admin` | Dashboard | Vue d'ensemble avec métriques et raccourcis admin |
+| `/admin/members` | Gestion des membres | Liste, recherche, ajout, édition, suppression + import CSV (prévisualisation puis confirmation) |
 | `/admin/members/[id]` | Détail membre | Voir/éditer un profil depuis l'admin |
-| `/admin/import` | Import CSV | Upload CSV + prévisualisation + envoi des invitations |
 | `/admin/promotions` | Promotions | CRUD années de promotion |
-| `/admin/programs` | Programmes | CRUD filières/programmes (nom, slug) |
 
 ### V2
 

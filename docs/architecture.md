@@ -39,11 +39,11 @@ src/
 │   │
 │   ├── (admin)/                  # Routes admin
 │   │   └── admin/
+│   │       ├── page.tsx
 │   │       ├── members/
 │   │       │   └── [id]/
 │   │       ├── promotions/
-│   │       ├── programs/
-│   │       └── import/
+│   │       └── ... (autres routes admin)
 │   │
 │   ├── profile/
 │   │   └── [id]/                 # Profil public (accessible à tous)
@@ -64,10 +64,14 @@ src/
 │   ├── layout/                   # Header, Sidebar, Footer
 │   ├── directory/                # Composants annuaire (SearchBar, Filters, AlumniCard)
 │   ├── profile/                  # Composants profil (ProfileForm, PrivacySettings)
-│   ├── admin/                    # Composants admin (MemberTable, CsvImport, PromotionForm)
+│   ├── admin/                    # Composants admin (AdminSidebar, MembersTable, PromotionsTable, etc.)
 │   └── shared/                   # Composants partagés (Pagination, EmptyState, etc.)
 │
 ├── lib/
+│   ├── actions/
+│   │   ├── auth.ts               # Server Actions auth (signIn, signUp, signOut)
+│   │   ├── members.ts            # Server Actions CRUD membres (profiles)
+│   │   └── promotions.ts         # Server Actions CRUD promotions
 │   ├── supabase/
 │   │   ├── client.ts             # Client Supabase (browser)
 │   │   ├── server.ts             # Client Supabase (server, cookies)
@@ -102,12 +106,13 @@ src/
 
 ### Data Fetching
 - **Server Components** : Fetch via le client Supabase server (`lib/supabase/server.ts`).
-- **Mutations** : Server Actions de Next.js.
+- **Mutations** : Server Actions de Next.js (dans `lib/actions/`).
 - **Client Components** : Via hooks custom si nécessaire.
 
 ### Auth & Middleware
-- Le `middleware.ts` vérifie la session Supabase via les cookies.
-- Les routes admin vérifient le rôle en plus de l'authentification.
+- Le `middleware.ts` vérifie la session Supabase via `getUser()`.
+- Les routes `/admin/*` sont protégées : le middleware vérifie que `profiles.role === 'admin'`.
+- Routes auth (`/login`, `/register`, etc.) redirigent vers `/` si déjà connecté.
 - Le client Supabase server utilise `cookies()` de Next.js.
 
 ### Gestion d'erreurs

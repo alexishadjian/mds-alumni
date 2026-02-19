@@ -5,12 +5,12 @@
 L'objectif est d'avoir un site fonctionnel avec l'annuaire comme page d'accueil, les profils, et l'admin de base.
 
 ### 1.1 Setup Projet
-- [ ] Installer shadcn/ui + composants de base (Button, Input, Card, Table, Dialog, etc.)
+- [x] Installer shadcn/ui + composants de base (Button, Input, Card, Table, Dialog, etc.)
 - [ ] Configurer les clients Supabase (browser, server, admin/service role)
 - [ ] Créer les types TypeScript depuis le schéma Supabase
-- [ ] Configurer les variables d'environnement (.env.local)
-- [ ] Mettre en place les layouts (public, app, admin)
-- [ ] Configurer le middleware (protection des routes par rôle)
+- [x] Configurer les variables d'environnement (.env.local)
+- [x] Mettre en place les layouts (public, app, admin)
+- [x] Configurer le middleware (protection des routes par rôle)
 
 ### 1.2 Base de Données Supabase
 - [x] Tables créées (profiles, promotion_year, programs, jobs, events, student_bonus)
@@ -40,12 +40,13 @@ L'objectif est d'avoir un site fonctionnel avec l'annuaire comme page d'accueil,
 - [ ] Upload de photo de profil (Supabase Storage)
 
 ### 1.6 Admin
-- [ ] Layout admin avec sidebar
-- [ ] Gestion des membres (`/admin/members`) : liste, recherche, édition, blocage
+- [x] Layout admin avec sidebar (style dashboard shadcn)
+- [x] Dashboard admin (`/admin`) : métriques + actions rapides
+- [x] Gestion des membres (`/admin/members`) : liste, recherche, ajout, édition, suppression, import CSV
 - [ ] Détail d'un membre (`/admin/members/[id]`)
-- [ ] Gestion des promotions (`/admin/promotions`) : CRUD années
-- [ ] Gestion des programmes (`/admin/programs`) : CRUD filières
-- [ ] Import CSV (`/admin/import`) : upload, prévisualisation, envoi des invitations
+- [x] Gestion des promotions (`/admin/promotions`) : CRUD années
+- [ ] Gestion des programmes (backlog, hors navigation admin)
+- [x] Import CSV intégré à `Membres` : colonnes firstname, lastname, promotion_name, promotion_year, role, email
 
 ---
 

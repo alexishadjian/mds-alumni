@@ -45,7 +45,7 @@ Profil étendu lié à `auth.users`. Contient aussi les privacy settings en JSON
 | current_company | text | | Entreprise actuelle |
 | current_sector | text | | Secteur d'activité |
 | current_contract_type | text | | Type de contrat actuel |
-| linkedin_url | text | | URL profil LinkedIn |
+| linkedin_pseudo | text | | Pseudo LinkedIn |
 | bio | text | | Bio / description |
 | skills | text[] | | Compétences |
 | location_city | text | | Ville |
@@ -53,6 +53,7 @@ Profil étendu lié à `auth.users`. Contient aussi les privacy settings en JSON
 | is_mentor | boolean | DEFAULT false | Disponible pour mentorat |
 | mentor_topics | text[] | | Sujets de mentorat |
 | privacy_settings | jsonb | DEFAULT (voir ci-dessous) | Paramètres de visibilité RGPD |
+| is_scrapped | boolean | DEFAULT false | Profil importé par scraping |
 | created_at | timestamptz | DEFAULT now() | Date de création |
 | updated_at | timestamptz | DEFAULT now() | Dernière modification |
 
@@ -94,6 +95,7 @@ Valeurs possibles pour chaque champ : `"public"`, `"community"`, `"private"`.
 |---------|------|------------|-------------|
 | id | bigint | PK, GENERATED ALWAYS AS IDENTITY | Identifiant |
 | year | integer | NOT NULL, UNIQUE | Année de promotion |
+| label | text | | Nom / label de la promotion |
 | created_at | timestamptz | DEFAULT now() | Date de création |
 
 ---

@@ -18,7 +18,7 @@ Les visiteurs non connectés (étudiants, recruteurs, curieux) accèdent à l'an
 
 ### 1.2 Onboarding Alumni
 
-1. **Pré-création** : L'Admin importe une liste CSV (Nom, Prénom, Email, Diplôme, Année de promotion).
+1. **Pré-création** : L'Admin importe une liste CSV (firstname, lastname, promotion_name, promotion_year, role, email).
 2. **Validation** : L'Admin visualise les données importées et choisit quand envoyer les invitations.
 3. **Invitation** : Le système envoie un email avec un lien unique (token) d'activation.
 4. **Activation** : L'Alumni clique sur le lien, définit son mot de passe.
@@ -85,7 +85,7 @@ L'annuaire est la page d'accueil du site. Il est accessible sans connexion en mo
 - **Promotions** : CRUD sur les promotions (nom, année).
 - **Filières** : CRUD sur les filières / spécialités.
 - **Membres** : CRUD utilisateurs, blocage d'accès.
-- **Import CSV** : Import en masse d'alumni, prévisualisation, puis envoi des invitations au choix de l'admin.
+- **Import CSV (dans l'onglet Membres)** : Import en masse avec les colonnes `firstname`, `lastname`, `promotion_name`, `promotion_year`, `role`, `email`, `linkedin_pseudo`, avec prévisualisation automatique puis confirmation manuelle de l'import. Rôles autorisés : `student`, `alumni`. Si une promotion du CSV n'existe pas, un avertissement est affiché et les membres concernés peuvent être importés sans promotion.
 
 ---
 

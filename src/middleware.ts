@@ -21,7 +21,38 @@ export const middleware = async (request: NextRequest) => {
       },
     },
   );
-  await supabase.auth.getClaims();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  const publicAuthRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  if (user && publicAuthRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  if (pathname.startsWith('/profile/edit') && !user) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
   return response;
 };
 
