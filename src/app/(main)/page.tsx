@@ -1,12 +1,35 @@
+import { createAdminClient } from '@/utils/supabase/admin';
+import { HomePage } from '@/components/home/home-page';
+
 export default async function Home() {
-    return (
-        <main className="container mx-auto px-4 py-8">
-            <h1 className="font-bricolage text-2xl font-semibold mb-6">My Digital School Alumni</h1>
-            <p className="text-muted-foreground">
-                My Digital School Alumni est une communauté d&apos;alumni de My Digital School. Elle
-                permet aux alumni de se connecter, de trouver des emplois, de partager leurs
-                expériences et de se tenir informé des événements de My Digital School.
-            </p>
-        </main>
-    );
+  const admin = createAdminClient();
+
+  const [alumniRes, promotionRes, companyRes] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .neq('role', 'admin')
+      .neq('role', 'viewer'),
+    admin.from('promotion_year').select('id', { count: 'exact', head: true }),
+    admin
+      .from('profiles')
+      .select('current_company')
+      .neq('role', 'admin')
+      .not('current_company', 'is', null)
+      .not('current_company', 'eq', ''),
+  ]);
+
+  const companies = new Set(
+    (companyRes.data ?? []).map((p) => (p.current_company as string).toLowerCase())
+  );
+
+  return (
+    <HomePage
+      stats={{
+        alumniCount: alumniRes.count ?? 0,
+        promotionCount: promotionRes.count ?? 0,
+        companyCount: companies.size,
+      }}
+    />
+  );
 }

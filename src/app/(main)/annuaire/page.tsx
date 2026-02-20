@@ -1,14 +1,34 @@
 import { Suspense } from 'react';
-import { getProfilesForDirectory } from '@/lib/actions/profile';
+import { getProfilesForDirectory, getDirectoryFilterOptions } from '@/lib/actions/profile';
 import { AlumniCard } from '@/components/directory/alumni-card';
 import { SearchBar } from '@/components/directory/search-bar';
+import { DirectoryFilters } from '@/components/directory/directory-filters';
 import { Users } from 'lucide-react';
 
-type Props = { searchParams: Promise<{ q?: string }> };
+type Props = {
+  searchParams: Promise<{
+    q?: string;
+    promotion?: string;
+    program?: string;
+    city?: string;
+    country?: string;
+  }>;
+};
 
 export default async function AnnuairePage({ searchParams }: Props) {
-  const { q } = await searchParams;
-  const profiles = await getProfilesForDirectory(q);
+  const params = await searchParams;
+  const [profiles, filterOptions] = await Promise.all([
+    getProfilesForDirectory({
+      search: params.q,
+      promotion: params.promotion,
+      program: params.program,
+      city: params.city,
+      country: params.country,
+    }),
+    getDirectoryFilterOptions(),
+  ]);
+
+  const hasActiveFilters = !!(params.promotion || params.program || params.city || params.country);
 
   return (
     <div className="min-h-screen bg-linear-to-b from-white to-gray-50/60">
@@ -46,6 +66,17 @@ export default async function AnnuairePage({ searchParams }: Props) {
               <SearchBar />
             </Suspense>
           </div>
+
+          <div className="mt-4 max-w-3xl">
+            <Suspense>
+              <DirectoryFilters
+                promotions={filterOptions.promotions}
+                programs={filterOptions.programs}
+                cities={filterOptions.cities}
+                countries={filterOptions.countries}
+              />
+            </Suspense>
+          </div>
         </div>
       </section>
 
@@ -56,8 +87,11 @@ export default async function AnnuairePage({ searchParams }: Props) {
             <div className="size-16 rounded-3xl bg-[#2CB8C5]/10 flex items-center justify-center mb-4">
               <Users className="size-7 text-[#2CB8C5]/60" />
             </div>
-            <p className="text-[#3C3C3B]/40 text-lg font-medium">Aucun résultat{q ? ` pour "${q}"` : ''}</p>
-            <p className="text-[#3C3C3B]/30 text-sm mt-1">Essaie avec d&apos;autres mots-clés</p>
+            <p className="text-[#3C3C3B]/40 text-lg font-medium">
+              Aucun résultat{params.q ? ` pour "${params.q}"` : ''}
+              {hasActiveFilters ? ' avec ces filtres' : ''}
+            </p>
+            <p className="text-[#3C3C3B]/30 text-sm mt-1">Essaie avec d&apos;autres mots-clés ou filtres</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

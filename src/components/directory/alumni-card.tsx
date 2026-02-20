@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MapPin, Briefcase } from 'lucide-react';
+import { MapPin, Briefcase, Building2 } from 'lucide-react';
 import type { Profile } from '@/types';
 
 type Props = { profile: Profile };
@@ -42,10 +42,16 @@ export const AlumniCard = ({ profile }: Props) => {
               {profile.programs.name}
             </p>
           )}
-          {(profile.current_job_title || profile.current_company) && (
+          {profile.current_job_title && (
             <div className="flex items-center gap-1.5 text-xs text-[#3C3C3B]/55">
               <Briefcase className="size-3 shrink-0 text-[#3C3C3B]/30" />
-              <span className="truncate">{[profile.current_job_title, profile.current_company].filter(Boolean).join(' · ')}</span>
+              <span className="truncate">{profile.current_job_title}</span>
+            </div>
+          )}
+          {profile.current_company && (
+            <div className="flex items-center gap-1.5 text-xs text-[#3C3C3B]/45">
+              <Building2 className="size-3 shrink-0 text-[#3C3C3B]/25" />
+              <span className="truncate">{profile.current_company}</span>
             </div>
           )}
           {(profile.location_city || profile.location_country) && (

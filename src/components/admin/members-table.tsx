@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Pencil, Trash2, Search, Upload, Users, AlertTriangle, CheckCircle2, Linkedin, FileSpreadsheet, ArrowUpFromLine, X } from 'lucide-react';
 import { MemberDialog } from './member-dialog';
+import { ScrapeButton } from './scrape-button';
 import { deleteMember, importMembersCsv, previewMembersCsv } from '@/lib/actions/members';
 import {
   Dialog,
@@ -39,6 +40,8 @@ interface MembersTableProps {
   members: Member[];
   promotions: Promotion[];
   search?: string;
+  activePromotion?: string;
+  activeRole?: string;
 }
 
 const GREY = { bg: 'rgba(156,163,175,0.12)', text: '#9ca3af' };
@@ -49,7 +52,7 @@ function getPromotionStyle(member: Member) {
   return { bg: `${color}18`, text: color };
 }
 
-export function MembersTable({ members, promotions, search }: MembersTableProps) {
+export function MembersTable({ members, promotions, search, activePromotion, activeRole }: MembersTableProps) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState(search ?? '');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -74,12 +77,40 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
+  const buildParams = () => {
+    const params = new URLSearchParams();
+    if (searchValue.trim()) params.set('q', searchValue.trim());
+    if (activePromotion) params.set('promotion', activePromotion);
+    if (activeRole) params.set('role', activeRole);
+    return params;
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const params = buildParams();
+    router.push(`/admin/members?${params.toString()}`);
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    const params = new URLSearchParams();
+    if (searchValue.trim()) params.set('q', searchValue.trim());
+    if (key === 'promotion') {
+      if (value) params.set('promotion', value);
+      if (activeRole) params.set('role', activeRole);
+    } else if (key === 'role') {
+      if (activePromotion) params.set('promotion', activePromotion);
+      if (value) params.set('role', value);
+    }
+    router.push(`/admin/members?${params.toString()}`);
+  };
+
+  const clearFilters = () => {
     const params = new URLSearchParams();
     if (searchValue.trim()) params.set('q', searchValue.trim());
     router.push(`/admin/members?${params.toString()}`);
   };
+
+  const hasFilters = !!(activePromotion || activeRole);
 
   const handleCreate = () => {
     setEditingMember(null);
@@ -167,30 +198,66 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
     <>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#3C3C3B]/35" />
-            <Input
-              placeholder="Rechercher par nom ou email…"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="h-9 w-72 rounded-xl border-black/8 bg-white pl-9 text-sm placeholder:text-[#3C3C3B]/30 focus-visible:border-[#2CB8C5]/50 focus-visible:ring-[#2CB8C5]/15"
-            />
-          </div>
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            className="h-9 rounded-xl border-black/8 bg-white text-xs font-semibold hover:border-[#2CB8C5]/40 hover:bg-[#2CB8C5]/5 hover:text-[#2CB8C5]"
+        <div className="flex flex-wrap items-center gap-2">
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#3C3C3B]/35" />
+              <Input
+                placeholder="Rechercher par nom ou email…"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="h-9 w-72 rounded-xl border-black/8 bg-white pl-9 text-sm placeholder:text-[#3C3C3B]/30 focus-visible:border-[#2CB8C5]/50 focus-visible:ring-[#2CB8C5]/15"
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              className="h-9 rounded-xl border-black/8 bg-white text-xs font-semibold hover:border-[#2CB8C5]/40 hover:bg-[#2CB8C5]/5 hover:text-[#2CB8C5]"
+            >
+              Rechercher
+            </Button>
+          </form>
+
+          <select
+            value={activePromotion ?? ''}
+            onChange={(e) => handleFilterChange('promotion', e.target.value)}
+            className={`h-9 rounded-xl border bg-white px-3 pr-8 text-xs outline-none transition-all focus:border-[#2CB8C5]/50 focus:ring-2 focus:ring-[#2CB8C5]/15 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%233C3C3B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_8px_center] bg-no-repeat ${activePromotion ? 'border-[#2CB8C5]/40 bg-[#2CB8C5]/5 text-[#2CB8C5] font-semibold' : 'border-black/8 text-[#3C3C3B]'}`}
           >
-            Rechercher
-          </Button>
-        </form>
+            <option value="">Toutes les promotions</option>
+            {promotions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label ?? p.year}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={activeRole ?? ''}
+            onChange={(e) => handleFilterChange('role', e.target.value)}
+            className={`h-9 rounded-xl border bg-white px-3 pr-8 text-xs outline-none transition-all focus:border-[#2CB8C5]/50 focus:ring-2 focus:ring-[#2CB8C5]/15 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%233C3C3B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_8px_center] bg-no-repeat ${activeRole ? 'border-[#662483]/40 bg-[#662483]/5 text-[#662483] font-semibold' : 'border-black/8 text-[#3C3C3B]'}`}
+          >
+            <option value="">Tous les rôles</option>
+            <option value="alumni">Alumni</option>
+            <option value="student">Étudiant</option>
+          </select>
+
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 rounded-xl border border-red-200/60 bg-red-50/60 px-3 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-100/60"
+            >
+              <X className="size-3" />
+              Effacer
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-[#3C3C3B]/6 px-3 py-1 text-xs font-semibold text-[#3C3C3B]/55">
             {members.length} membre{members.length > 1 ? 's' : ''}
           </span>
+          <ScrapeButton />
           <Button
             variant="outline"
             size="sm"

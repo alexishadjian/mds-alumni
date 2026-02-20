@@ -137,6 +137,17 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  button,
+  [role="button"],
+  a,
+  select,
+  summary,
+  [type="button"],
+  [type="submit"],
+  [type="reset"] {
+    cursor: pointer;
+  }
 }
 
 html {
@@ -183,4 +194,19 @@ html {
 
 .animate-shimmer {
   animation: shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient-shift 4s ease-in-out infinite;
 }
