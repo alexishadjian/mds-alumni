@@ -1,8 +1,8 @@
 const VOYAGER_API = 'https://www.linkedin.com/voyager/api';
 const GRAPHQL_QUERY_ID = 'voyagerIdentityDashProfiles.8ca6ef03f32147a4d49324ed99a3d978';
 
-const DELAY_MS = { min: 2000, max: 4000 };
-const DELAY_BETWEEN_PROFILES_MS = { min: 8000, max: 15000 };
+const DELAY_MS = { min: 800, max: 1500 };
+const DELAY_BETWEEN_PROFILES_MS = { min: 3000, max: 5000 };
 
 const COUNTRY_CODES: Record<string, string> = {
   fr: 'France', us: 'États-Unis', gb: 'Royaume-Uni', de: 'Allemagne',
