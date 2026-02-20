@@ -1,10 +1,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import Image from 'next/image';
-import Link from 'next/link';
-import { mydigitalschoollogo } from '@/public/assets';
 import { AuthButton } from './auth-button';
 import { ClientNav } from './client-nav';
+import { HeaderShell } from './header-shell';
+import { HeaderLogo } from './header-logo';
 
 export const Header = async () => {
   const supabase = createClient(await cookies());
@@ -17,22 +16,14 @@ export const Header = async () => {
     .filter(Boolean).join('').toUpperCase() || displayName[0]?.toUpperCase() || '?';
 
   return (
-    <header className="sticky top-0 z-50 h-16 bg-white/80 backdrop-blur-xl border-b border-black/5 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
+    <HeaderShell>
       <div className="container mx-auto flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center">
-            <Image
-              src={mydigitalschoollogo}
-              alt="My Digital School"
-              width={130}
-              height={40}
-              className="h-8 w-auto object-contain"
-            />
-          </Link>
+          <HeaderLogo />
           <ClientNav />
         </div>
         <AuthButton isLoggedIn={!!user} displayName={displayName} initials={initials} />
       </div>
-    </header>
+    </HeaderShell>
   );
 };
