@@ -86,6 +86,7 @@ L'annuaire est la page d'accueil du site. Il est accessible sans connexion en mo
 - **Filières** : CRUD sur les filières / spécialités.
 - **Membres** : CRUD utilisateurs, blocage d'accès.
 - **Import CSV (dans l'onglet Membres)** : Import en masse avec les colonnes `firstname`, `lastname`, `promotion_name`, `promotion_year`, `role`, `email`, `linkedin_pseudo`, avec prévisualisation automatique puis confirmation manuelle de l'import. Rôles autorisés : `student`, `alumni`. Si une promotion du CSV n'existe pas, un avertissement est affiché et les membres concernés peuvent être importés sans promotion.
+- **Scraper LinkedIn** : Enrichissement automatique des profils alumni via approche hybride (HTML + API Voyager LinkedIn). Scrape les alumni avec `is_scrapped = false` et un `linkedin_pseudo` renseigné. Données récupérées : avatar (stocké dans Supabase Storage via `og:image`), poste actuel (titre de la dernière expérience), entreprise, type de contrat (`employmentTypeUrn` → CDI/CDD/Stage/Alternance), ville et pays (localisation globale du profil). Déclenchement manuel (bouton admin) ou automatique (Vercel Cron 6x/jour). Batch de 1 profil par exécution avec délais randomisés (2-4s entre appels, 8-15s entre profils). Sauvegarde partielle si les API échouent. Nécessite `LINKEDIN_LI_AT`, `LINKEDIN_JSESSIONID` et `CRON_SECRET` en variables d'environnement.
 
 ---
 

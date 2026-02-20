@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Pencil, Trash2, Search, Upload, Users, AlertTriangle, CheckCircle2, Linkedin, FileSpreadsheet, ArrowUpFromLine, X } from 'lucide-react';
 import { MemberDialog } from './member-dialog';
+import { ScrapeButton } from './scrape-button';
 import { deleteMember, importMembersCsv, previewMembersCsv } from '@/lib/actions/members';
 import {
   Dialog,
@@ -191,6 +192,7 @@ export function MembersTable({ members, promotions, search }: MembersTableProps)
           <span className="rounded-full bg-[#3C3C3B]/6 px-3 py-1 text-xs font-semibold text-[#3C3C3B]/55">
             {members.length} membre{members.length > 1 ? 's' : ''}
           </span>
+          <ScrapeButton />
           <Button
             variant="outline"
             size="sm"
