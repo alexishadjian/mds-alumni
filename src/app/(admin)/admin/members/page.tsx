@@ -3,11 +3,15 @@ import { cookies } from 'next/headers';
 import { MembersTable } from '@/components/admin/members-table';
 
 interface Props {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    promotion?: string;
+    role?: string;
+  }>;
 }
 
 export default async function MembersPage({ searchParams }: Props) {
-  const { q } = await searchParams;
+  const params = await searchParams;
   const supabase = createClient(await cookies());
 
   let query = supabase
@@ -16,10 +20,16 @@ export default async function MembersPage({ searchParams }: Props) {
     .neq('role', 'admin')
     .order('created_at', { ascending: false });
 
-  if (q) {
+  if (params.q) {
     query = query.or(
-      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`
+      `first_name.ilike.%${params.q}%,last_name.ilike.%${params.q}%,email.ilike.%${params.q}%`
     );
+  }
+  if (params.promotion) {
+    query = query.eq('promotion_year_id', params.promotion);
+  }
+  if (params.role) {
+    query = query.eq('role', params.role);
   }
 
   const { data: members } = await query;
@@ -43,7 +53,9 @@ export default async function MembersPage({ searchParams }: Props) {
       <MembersTable
         members={members ?? []}
         promotions={promotions ?? []}
-        search={q}
+        search={params.q}
+        activePromotion={params.promotion}
+        activeRole={params.role}
       />
     </div>
   );

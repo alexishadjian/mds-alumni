@@ -9,7 +9,15 @@ import type { Profile } from '@/types';
 
 type ActionResult = { success: boolean; error?: string };
 
-export const getProfilesForDirectory = async (search?: string): Promise<Profile[]> => {
+export interface DirectoryFilters {
+  search?: string;
+  promotion?: string;
+  program?: string;
+  city?: string;
+  country?: string;
+}
+
+export const getProfilesForDirectory = async (filters: DirectoryFilters = {}): Promise<Profile[]> => {
   const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   const isAuthenticated = !!user;
@@ -22,10 +30,14 @@ export const getProfilesForDirectory = async (search?: string): Promise<Profile[
     .neq('role', 'viewer')
     .order('last_name');
 
-  if (search?.trim()) {
-    const s = `%${search.trim()}%`;
+  if (filters.search?.trim()) {
+    const s = `%${filters.search.trim()}%`;
     query = query.or(`first_name.ilike.${s},last_name.ilike.${s},current_job_title.ilike.${s},current_company.ilike.${s}`);
   }
+  if (filters.promotion) query = query.eq('promotion_year_id', filters.promotion);
+  if (filters.program) query = query.eq('program_id', filters.program);
+  if (filters.city) query = query.ilike('location_city', filters.city);
+  if (filters.country) query = query.ilike('location_country', filters.country);
 
   const { data, error } = await query;
 
@@ -35,6 +47,27 @@ export const getProfilesForDirectory = async (search?: string): Promise<Profile[
   }
   const profiles = (data ?? []).map((p) => filterProfileByPrivacy(p as Profile, isAuthenticated));
   return profiles;
+};
+
+export const getDirectoryFilterOptions = async () => {
+  const admin = createAdminClient();
+
+  const [promotionsRes, programsRes, citiesRes, countriesRes] = await Promise.all([
+    admin.from('promotion_year').select('id, year, label').order('year', { ascending: false }),
+    admin.from('programs').select('id, name').order('name'),
+    admin.from('profiles').select('location_city').neq('role', 'admin').not('location_city', 'is', null).not('location_city', 'eq', ''),
+    admin.from('profiles').select('location_country').neq('role', 'admin').not('location_country', 'is', null).not('location_country', 'eq', ''),
+  ]);
+
+  const cities = [...new Set((citiesRes.data ?? []).map((p) => p.location_city as string))].sort();
+  const countries = [...new Set((countriesRes.data ?? []).map((p) => p.location_country as string))].sort();
+
+  return {
+    promotions: (promotionsRes.data ?? []) as { id: number; year: number; label: string | null }[],
+    programs: (programsRes.data ?? []) as { id: number; name: string }[],
+    cities,
+    countries,
+  };
 };
 
 export const getProfileById = async (id: string): Promise<Profile | null> => {
