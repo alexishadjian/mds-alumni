@@ -4,7 +4,15 @@ function buildDownloadHeaders(imageUrl: string): Record<string, string> {
   const headers: Record<string, string> = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
     Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
     Referer: 'https://www.linkedin.com/',
+    Origin: 'https://www.linkedin.com',
+    'Sec-Ch-Ua': '"Chromium";v="136", "Not_A Brand";v="24", "Google Chrome";v="136"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"macOS"',
+    'Sec-Fetch-Dest': 'image',
+    'Sec-Fetch-Mode': 'no-cors',
+    'Sec-Fetch-Site': 'cross-site',
   };
 
   if (imageUrl.includes('licdn.com') || imageUrl.includes('linkedin.com')) {
@@ -18,14 +26,32 @@ function buildDownloadHeaders(imageUrl: string): Record<string, string> {
   return headers;
 }
 
+async function tryDownload(imageUrl: string): Promise<Response | null> {
+  const res = await fetch(imageUrl, { headers: buildDownloadHeaders(imageUrl) });
+  if (res.ok) return res;
+
+  // Retry without cookies -- some CDN URLs are public and cookies cause 403
+  if (res.status === 403) {
+    const minimalHeaders: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      Referer: 'https://www.linkedin.com/',
+    };
+    const retry = await fetch(imageUrl, { headers: minimalHeaders });
+    if (retry.ok) return retry;
+  }
+
+  return null;
+}
+
 export async function downloadAndUploadAvatar(
   profileId: string,
   imageUrl: string
 ): Promise<string | null> {
   try {
-    const res = await fetch(imageUrl, { headers: buildDownloadHeaders(imageUrl) });
-    if (!res.ok) {
-      console.error(`Avatar download failed for ${profileId}: HTTP ${res.status}`);
+    const res = await tryDownload(imageUrl);
+    if (!res) {
+      console.error(`Avatar download failed for ${profileId}: all attempts failed`);
       return null;
     }
 

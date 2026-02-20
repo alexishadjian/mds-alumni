@@ -79,8 +79,13 @@ export async function POST(req: Request) {
         }
 
         let avatarUrl: string | null = null;
-        if (scraped?.avatarUrl) {
-          avatarUrl = await downloadAndUploadAvatar(profile.id, scraped.avatarUrl);
+        const candidates = scraped?.avatarCandidates || (scraped?.avatarUrl ? [scraped.avatarUrl] : []);
+        for (const candidateUrl of candidates) {
+          avatarUrl = await downloadAndUploadAvatar(profile.id, candidateUrl);
+          if (avatarUrl) {
+            console.log(`[Scrape] ${name}: avatar downloaded from candidate ${candidates.indexOf(candidateUrl) + 1}/${candidates.length}`);
+            break;
+          }
         }
 
         const updateData: Record<string, unknown> = {

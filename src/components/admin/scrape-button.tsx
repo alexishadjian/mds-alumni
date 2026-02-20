@@ -83,6 +83,7 @@ export function ScrapeButton() {
             } else if (event.type === 'error') {
               setProgress((p) => p ? { ...p, errors: [...p.errors, `${event.name}: ${event.error}`] } : null);
             } else if (event.type === 'complete') {
+              await new Promise((r) => setTimeout(r, 1000));
               setProgress((p) => p ? {
                 ...p,
                 phase: 'done',
@@ -118,7 +119,7 @@ export function ScrapeButton() {
         )}
         {isLoading
           ? progress.total > 0
-            ? `${progress.current}/${progress.total}`
+            ? `${progress.succeeded + progress.failed}/${progress.total}`
             : 'Chargement…'
           : 'Scraper LinkedIn'}
       </Button>
@@ -178,35 +179,39 @@ export function ScrapeButton() {
         </div>
       )}
 
-      {isLoading && progress.total > 0 && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-black/8 bg-white p-4 shadow-xl">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Loader2 className="size-4 shrink-0 animate-spin text-[#2CB8C5]" />
-              <div>
-                <p className="text-sm font-semibold text-[#3C3C3B]">
-                  Scraping en cours… {progress.current}/{progress.total}
-                </p>
-                {progress.name && (
-                  <p className="mt-0.5 text-xs text-[#3C3C3B]/50">{progress.name}</p>
-                )}
+      {isLoading && progress.total > 0 && (() => {
+        const completed = progress.succeeded + progress.failed;
+        const pct = Math.round((completed / progress.total) * 100);
+        return (
+          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-black/8 bg-white p-4 shadow-xl">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Loader2 className="size-4 shrink-0 animate-spin text-[#2CB8C5]" />
+                <div>
+                  <p className="text-sm font-semibold text-[#3C3C3B]">
+                    Scraping en cours… {progress.current}/{progress.total}
+                  </p>
+                  {progress.name && (
+                    <p className="mt-0.5 text-xs text-[#3C3C3B]/50">{progress.name}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#3C3C3B]/5">
+                <div
+                  className="h-full rounded-full bg-[#2CB8C5] transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between text-[10px] text-[#3C3C3B]/40">
+                <span>{progress.succeeded} succès{progress.failed > 0 ? `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}` : ''}</span>
+                <span>{pct}%</span>
               </div>
             </div>
-
-            <div className="h-2 w-full overflow-hidden rounded-full bg-[#3C3C3B]/5">
-              <div
-                className="h-full rounded-full bg-[#2CB8C5] transition-all duration-500"
-                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between text-[10px] text-[#3C3C3B]/40">
-              <span>{progress.succeeded} succès{progress.failed > 0 ? `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}` : ''}</span>
-              <span>{Math.round((progress.current / progress.total) * 100)}%</span>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

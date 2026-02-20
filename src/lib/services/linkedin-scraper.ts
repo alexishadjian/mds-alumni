@@ -1,8 +1,8 @@
 const VOYAGER_API = 'https://www.linkedin.com/voyager/api';
 const GRAPHQL_QUERY_ID = 'voyagerIdentityDashProfiles.8ca6ef03f32147a4d49324ed99a3d978';
 
-const DELAY_MS = { min: 800, max: 1500 };
-const DELAY_BETWEEN_PROFILES_MS = { min: 3000, max: 5000 };
+const DELAY_MS = { min: 400, max: 800 };
+const DELAY_BETWEEN_PROFILES_MS = { min: 1500, max: 3000 };
 
 const COUNTRY_CODES: Record<string, string> = {
   fr: 'France', us: 'États-Unis', gb: 'Royaume-Uni', de: 'Allemagne',
@@ -23,6 +23,7 @@ const EMPLOYMENT_TYPES: Record<string, string> = {
 
 export interface LinkedInScrapedData {
   avatarUrl: string | null;
+  avatarCandidates: string[];
   currentJobTitle: string | null;
   currentCompany: string | null;
   currentContractType: string | null;
@@ -109,23 +110,59 @@ async function fetchPublicAvatar(pseudo: string): Promise<string | null> {
   }
 }
 
-function extractAvatarFromHtmlEntities(entities: AnyJson[]): string | null {
+function buildVectorImageUrl(v: AnyJson, artifact: AnyJson): string | null {
+  const seg = artifact.fileIdentifyingUrlPathSegment;
+  if (!seg) return null;
+  const rootUrl = v.rootUrl;
+  if (rootUrl) return `${rootUrl}${seg}`;
+  return `https://media.licdn.com/dms/image/${seg}`;
+}
+
+function extractAllAvatarCandidates(entities: AnyJson[], logPrefix?: string): string[] {
+  const candidates: string[] = [];
   const vectors = entities.filter(
     (e) => e.$type === 'com.linkedin.common.VectorImage' && Array.isArray(e.artifacts)
   );
+
+  if (logPrefix) {
+    const segSamples = vectors.flatMap((v) =>
+      (v.artifacts || []).slice(0, 1).map((a: AnyJson) => a.fileIdentifyingUrlPathSegment?.substring(0, 60))
+    ).filter(Boolean);
+    console.log(`[Scrape] ${logPrefix} VectorImages: ${vectors.length}, sample segs: ${segSamples.join(' | ') || 'none'}`);
+  }
+
+  // Pass 1: any profile photo artifacts (displayphoto, framedphoto, etc.)
+  const profilePhotoPatterns = ['profile-displayphoto', 'profile-framedphoto', 'profile-original'];
   for (const v of vectors) {
-    const square = v.artifacts?.find(
-      (a: AnyJson) => a.width === a.height && a.width >= 200
+    const isProfilePhoto = v.artifacts?.some(
+      (a: AnyJson) => profilePhotoPatterns.some((p) => a.fileIdentifyingUrlPathSegment?.includes(p))
     );
-    if (square) {
-      const seg = square.fileIdentifyingUrlPathSegment;
-      if (!seg) continue;
-      const rootUrl = v.rootUrl;
-      if (rootUrl) return `${rootUrl}${seg}`;
-      return `https://media.licdn.com/dms/image/${seg}`;
+    if (!isProfilePhoto) continue;
+    const sorted = [...(v.artifacts || [])]
+      .filter((a: AnyJson) => a.width && a.height)
+      .sort((a: AnyJson, b: AnyJson) => (b.width || 0) - (a.width || 0));
+    for (const art of sorted) {
+      const url = buildVectorImageUrl(v, art);
+      if (url && !candidates.includes(url)) candidates.push(url);
     }
   }
-  return null;
+
+  // Pass 2: square or near-square images >= 100px (excluding banner-like images)
+  for (const v of vectors) {
+    const arts = v.artifacts
+      ?.filter((a: AnyJson) => {
+        if (!a.width || !a.height) return false;
+        const ratio = a.width / a.height;
+        return ratio >= 0.8 && ratio <= 1.25 && a.width >= 100;
+      })
+      ?.sort((a: AnyJson, b: AnyJson) => (b.width || 0) - (a.width || 0)) || [];
+    for (const art of arts) {
+      const url = buildVectorImageUrl(v, art);
+      if (url && !candidates.includes(url)) candidates.push(url);
+    }
+  }
+
+  return candidates;
 }
 
 // --- Step 2: Authenticated HTML page (location + session setup) ---
@@ -180,7 +217,7 @@ function extractEntitiesFromHtml(html: string): AnyJson[] {
 }
 
 interface HtmlProfileData {
-  avatarUrl: string | null;
+  avatarCandidates: string[];
   locationCity: string | null;
   locationCountry: string | null;
   headline: string | null;
@@ -203,10 +240,11 @@ function extractProfileDataFromHtml(html: string, pseudo: string): HtmlProfileDa
     (e) => e.$type === 'com.linkedin.voyager.dash.identity.profile.Profile' && e.publicIdentifier === pseudo
   );
 
-  const avatarFromEntities = extractAvatarFromHtmlEntities(entities);
+  const avatarCandidates = extractAllAvatarCandidates(entities, pseudo);
+  console.log(`[Scrape] ${pseudo} HTML entities: ${entities.length} entities, ${avatarCandidates.length} avatar candidates`);
 
   return {
-    avatarUrl: avatarFromEntities,
+    avatarCandidates,
     locationCity: city,
     locationCountry: country || countryFromIso,
     headline: profile?.headline || null,
@@ -256,13 +294,59 @@ function buildVoyagerHeaders(pseudo: string): Record<string, string> {
   };
 }
 
+function extractAvatarCandidatesFromGraphQL(included: AnyJson[]): string[] {
+  const candidates: string[] = [];
+
+  // miniProfile with picture -> VectorImage
+  const mini = included.find(
+    (i) => i.$type === 'com.linkedin.voyager.identity.shared.MiniProfile' && i.picture
+  );
+  if (mini?.picture) {
+    const pic = mini.picture;
+    if (pic['com.linkedin.common.VectorImage']) {
+      const vi = pic['com.linkedin.common.VectorImage'];
+      if (vi.rootUrl && Array.isArray(vi.artifacts)) {
+        const sorted = [...vi.artifacts]
+          .filter((a: AnyJson) => a.width && a.height)
+          .sort((a: AnyJson, b: AnyJson) => (b.width || 0) - (a.width || 0));
+        for (const art of sorted) {
+          if (art.fileIdentifyingUrlPathSegment) {
+            const url = `${vi.rootUrl}${art.fileIdentifyingUrlPathSegment}`;
+            if (!candidates.includes(url)) candidates.push(url);
+          }
+        }
+      }
+    }
+  }
+
+  // VectorImage entities in included with profile-displayphoto
+  const vectors = included.filter(
+    (i) => i.$type === 'com.linkedin.common.VectorImage' && Array.isArray(i.artifacts)
+  );
+  for (const v of vectors) {
+    const isProfilePhoto = v.artifacts?.some(
+      (a: AnyJson) => a.fileIdentifyingUrlPathSegment?.includes('profile-displayphoto')
+    );
+    if (!isProfilePhoto) continue;
+    const sorted = [...(v.artifacts || [])]
+      .filter((a: AnyJson) => a.width && a.height)
+      .sort((a: AnyJson, b: AnyJson) => (b.width || 0) - (a.width || 0));
+    for (const art of sorted) {
+      const url = buildVectorImageUrl(v, art);
+      if (url && !candidates.includes(url)) candidates.push(url);
+    }
+  }
+
+  return candidates;
+}
+
 async function fetchPositionUrn(
   pseudo: string, headers: Record<string, string>
-): Promise<{ positionUrn: string | null; error?: string }> {
+): Promise<{ positionUrn: string | null; avatarCandidates: string[]; error?: string }> {
   const url = `${VOYAGER_API}/graphql?queryId=${GRAPHQL_QUERY_ID}&includeWebMetadata=true&variables=(vanityName:${pseudo})`;
   const res = await fetch(url, { headers, redirect: 'manual' });
   const err = checkResponse(res);
-  if (err) return { positionUrn: null, error: err };
+  if (err) return { positionUrn: null, avatarCandidates: [], error: err };
 
   const json = await res.json();
   const included = (json.included || []) as AnyJson[];
@@ -272,7 +356,10 @@ async function fetchPositionUrn(
     (i) => i.$type?.includes('Profile') && i.firstName
   );
 
-  return { positionUrn: prof?.profileTopPosition?.['*elements']?.[0] || null };
+  const avatarCandidates = extractAvatarCandidatesFromGraphQL(included);
+  console.log(`[Scrape] ${pseudo} GraphQL: ${included.length} included, ${avatarCandidates.length} avatar candidates`);
+
+  return { positionUrn: prof?.profileTopPosition?.['*elements']?.[0] || null, avatarCandidates };
 }
 
 async function fetchPositionDetails(
@@ -312,27 +399,38 @@ export async function scrapeLinkedInProfile(
   linkedinPseudo: string
 ): Promise<{ success: true; data: LinkedInScrapedData } | { success: false; error: string; partialData?: Partial<LinkedInScrapedData> }> {
   try {
-    // 1. Public avatar (no auth, can't break the cookie)
-    const publicAvatar = await fetchPublicAvatar(linkedinPseudo);
+    const allAvatarCandidates: string[] = [];
 
-    // 2. Authenticated HTML page (location from profile Geo entities + avatar fallback)
+    // 1. Public avatar via og:image (no auth)
+    const publicAvatar = await fetchPublicAvatar(linkedinPseudo);
+    if (publicAvatar) allAvatarCandidates.push(publicAvatar);
+
+    // 2. Authenticated HTML page (location + avatar from entities)
     const pageResult = await fetchAuthenticatedPage(linkedinPseudo);
     if (pageResult.error && !pageResult.html) {
       return {
         success: false,
         error: pageResult.error,
-        partialData: { avatarUrl: publicAvatar },
+        partialData: { avatarUrl: publicAvatar, avatarCandidates: allAvatarCandidates },
       };
     }
 
     const htmlData = extractProfileDataFromHtml(pageResult.html!, linkedinPseudo);
-    const avatarUrl = publicAvatar || htmlData.avatarUrl;
-    console.log(`[Scrape] ${linkedinPseudo} avatar: public=${publicAvatar ? 'found' : 'null'}, html=${htmlData.avatarUrl ? 'found' : 'null'}, final=${avatarUrl ? avatarUrl.substring(0, 80) + '...' : 'null'}`);
+    for (const c of htmlData.avatarCandidates) {
+      if (!allAvatarCandidates.includes(c)) allAvatarCandidates.push(c);
+    }
 
-    // 3. GraphQL call -> positionUrn
+    // 3. GraphQL call -> positionUrn + avatar candidates
     await randomDelay(DELAY_MS);
     const voyagerHeaders = buildVoyagerHeaders(linkedinPseudo);
     const gql = await fetchPositionUrn(linkedinPseudo, voyagerHeaders);
+
+    for (const c of gql.avatarCandidates) {
+      if (!allAvatarCandidates.includes(c)) allAvatarCandidates.push(c);
+    }
+
+    const avatarUrl = allAvatarCandidates[0] || null;
+    console.log(`[Scrape] ${linkedinPseudo} avatar: ${allAvatarCandidates.length} total candidates, best=${avatarUrl ? avatarUrl.substring(0, 60) + '...' : 'null'}`);
 
     if (gql.error && isCriticalError(gql.error)) {
       return {
@@ -340,6 +438,7 @@ export async function scrapeLinkedInProfile(
         error: gql.error,
         partialData: {
           avatarUrl,
+          avatarCandidates: allAvatarCandidates,
           currentJobTitle: htmlData.headline,
           locationCity: htmlData.locationCity,
           locationCountry: htmlData.locationCountry,
@@ -362,6 +461,7 @@ export async function scrapeLinkedInProfile(
           error: pos.error,
           partialData: {
             avatarUrl,
+            avatarCandidates: allAvatarCandidates,
             currentJobTitle: htmlData.headline,
             locationCity: htmlData.locationCity,
             locationCountry: htmlData.locationCountry,
@@ -378,6 +478,7 @@ export async function scrapeLinkedInProfile(
       success: true,
       data: {
         avatarUrl,
+        avatarCandidates: allAvatarCandidates,
         currentJobTitle: posTitle || htmlData.headline,
         currentCompany: posCompany,
         currentContractType: contractType,
