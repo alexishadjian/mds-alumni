@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { scrapeLinkedInProfile, delayBetweenProfiles, isCriticalError } from '@/lib/services/linkedin-scraper';
+import type { LinkedInCredentials } from '@/lib/services/linkedin-scraper';
 import { downloadAndUploadAvatar } from '@/lib/services/avatar-upload';
+import { getLinkedInCredentials, updateLinkedInTokenStatus } from '@/lib/actions/settings';
 
 export const maxDuration = 300;
 
@@ -29,6 +31,16 @@ export async function POST(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const admin = createAdminClient();
+
+  // Load LinkedIn credentials from DB (fallback to env)
+  const { liAt, jsessionId } = await getLinkedInCredentials();
+  if (!liAt) {
+    return NextResponse.json(
+      { error: 'Tokens LinkedIn non configurés. Ajoutez-les dans Admin > Réglages.' },
+      { status: 400 }
+    );
+  }
+  const creds: LinkedInCredentials = { liAt, jsessionId };
 
   const { data: profiles, error: fetchError } = await admin
     .from('profiles')
@@ -64,7 +76,7 @@ export async function POST(req: Request) {
         send({ type: 'progress', current: i + 1, total: profiles.length, name });
 
         console.log(`[Scrape] Processing ${name} (${profile.linkedin_pseudo})...`);
-        const result = await scrapeLinkedInProfile(profile.linkedin_pseudo!);
+        const result = await scrapeLinkedInProfile(profile.linkedin_pseudo!, creds);
         const scraped = result.success ? result.data : result.partialData;
 
         if (!result.success) {
@@ -72,6 +84,7 @@ export async function POST(req: Request) {
           errors.push(`${name}: ${result.error}`);
 
           if (isCriticalError(result.error)) {
+            await updateLinkedInTokenStatus('expired', result.error);
             send({ type: 'error', name, error: result.error, critical: true });
             failed++;
             break;
@@ -123,6 +136,10 @@ export async function POST(req: Request) {
             },
           });
         }
+      }
+
+      if (succeeded > 0) {
+        await updateLinkedInTokenStatus('valid');
       }
 
       send({ type: 'complete', total: profiles.length, succeeded, failed, errors });
