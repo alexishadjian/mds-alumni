@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { scrapeLinkedInProfile, delayBetweenProfiles, isCriticalError } from '@/lib/services/linkedin-scraper';
+import type { LinkedInCredentials } from '@/lib/services/linkedin-scraper';
 import { downloadAndUploadAvatar } from '@/lib/services/avatar-upload';
+import { getLinkedInCredentials, updateLinkedInTokenStatus } from '@/lib/actions/settings';
 
 export const maxDuration = 300;
 
@@ -30,12 +32,34 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
 
-  const { data: profiles, error: fetchError } = await admin
+  // Parse mode: "new" (default) = only unscraped, "all" = rescrape everyone
+  let mode: 'new' | 'all' = 'new';
+  try {
+    const body = await req.json().catch(() => ({}));
+    if (body.mode === 'all') mode = 'all';
+  } catch { /* default to 'new' */ }
+
+  // Load LinkedIn credentials from DB (fallback to env)
+  const { liAt, jsessionId } = await getLinkedInCredentials();
+  if (!liAt) {
+    return NextResponse.json(
+      { error: 'Tokens LinkedIn non configurés. Ajoutez-les dans Admin > Réglages.' },
+      { status: 400 }
+    );
+  }
+  const creds: LinkedInCredentials = { liAt, jsessionId };
+
+  let query = admin
     .from('profiles')
     .select('id, first_name, last_name, linkedin_pseudo')
-    .eq('is_scrapped', false)
     .not('linkedin_pseudo', 'is', null)
     .not('linkedin_pseudo', 'eq', '');
+
+  if (mode === 'new') {
+    query = query.eq('is_scrapped', false);
+  }
+
+  const { data: profiles, error: fetchError } = await query;
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
   if (!profiles || profiles.length === 0) {
@@ -49,7 +73,7 @@ export async function POST(req: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
 
-      send({ type: 'start', total: profiles.length });
+      send({ type: 'start', total: profiles.length, mode });
 
       const errors: string[] = [];
       let succeeded = 0;
@@ -64,7 +88,7 @@ export async function POST(req: Request) {
         send({ type: 'progress', current: i + 1, total: profiles.length, name });
 
         console.log(`[Scrape] Processing ${name} (${profile.linkedin_pseudo})...`);
-        const result = await scrapeLinkedInProfile(profile.linkedin_pseudo!);
+        const result = await scrapeLinkedInProfile(profile.linkedin_pseudo!, creds);
         const scraped = result.success ? result.data : result.partialData;
 
         if (!result.success) {
@@ -72,6 +96,7 @@ export async function POST(req: Request) {
           errors.push(`${name}: ${result.error}`);
 
           if (isCriticalError(result.error)) {
+            await updateLinkedInTokenStatus('expired', result.error);
             send({ type: 'error', name, error: result.error, critical: true });
             failed++;
             break;
@@ -123,6 +148,10 @@ export async function POST(req: Request) {
             },
           });
         }
+      }
+
+      if (succeeded > 0) {
+        await updateLinkedInTokenStatus('valid');
       }
 
       send({ type: 'complete', total: profiles.length, succeeded, failed, errors });

@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { ArrowRight, CalendarDays, GraduationCap, Users, UserCheck } from 'lucide-react';
+import { ArrowRight, CalendarDays, GraduationCap, Users, UserCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
+import { getLinkedInTokenInfo } from '@/lib/actions/settings';
 
 interface DashboardMember {
   id: string;
@@ -43,6 +44,8 @@ const getAvatarStyle = (member: DashboardMember) => {
 
 export default async function AdminPage() {
   const supabase = createClient(await cookies());
+
+  const tokenInfo = await getLinkedInTokenInfo().catch(() => null);
 
   const [
     { count: membersCount },
@@ -114,6 +117,25 @@ export default async function AdminPage() {
           Statistiques de la communauté et raccourcis d&apos;administration.
         </p>
       </div>
+
+      {/* LinkedIn token alert */}
+      {tokenInfo?.status === 'expired' && (
+        <Link
+          href="/admin/settings"
+          className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100/60"
+        >
+          <AlertTriangle className="size-5 shrink-0 text-red-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-red-800">
+              Tokens LinkedIn expirés
+            </p>
+            <p className="text-xs text-red-600">
+              Le scraping est arrêté. Cliquez pour mettre à jour les tokens.
+            </p>
+          </div>
+          <ArrowRight className="size-4 shrink-0 text-red-400" />
+        </Link>
+      )}
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -21,6 +21,11 @@ const EMPLOYMENT_TYPES: Record<string, string> = {
   '19': 'alternance', '20': 'stage',
 };
 
+export interface LinkedInCredentials {
+  liAt: string;
+  jsessionId: string;
+}
+
 export interface LinkedInScrapedData {
   avatarUrl: string | null;
   avatarCandidates: string[];
@@ -68,13 +73,15 @@ function checkResponse(res: Response): string | null {
 
 // --- Auth helpers ---
 
-function getLiAt(): string {
+function getLiAt(creds?: LinkedInCredentials): string {
+  if (creds?.liAt) return creds.liAt;
   const v = process.env.LINKEDIN_LI_AT;
   if (!v) throw new Error('LINKEDIN_LI_AT non configuré');
   return v;
 }
 
-function getJsessionId(): string {
+function getJsessionId(creds?: LinkedInCredentials): string {
+  if (creds?.jsessionId) return creds.jsessionId;
   return process.env.LINKEDIN_JSESSIONID || 'ajax:0';
 }
 
@@ -167,12 +174,12 @@ function extractAllAvatarCandidates(entities: AnyJson[], logPrefix?: string): st
 
 // --- Step 2: Authenticated HTML page (location + session setup) ---
 
-function buildBrowserHeaders(): Record<string, string> {
+function buildBrowserHeaders(creds?: LinkedInCredentials): Record<string, string> {
   return {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-    Cookie: `li_at=${getLiAt()}; JSESSIONID="${getJsessionId()}"; lang=v=2&lang=fr-fr`,
+    Cookie: `li_at=${getLiAt(creds)}; JSESSIONID="${getJsessionId(creds)}"; lang=v=2&lang=fr-fr`,
     'Sec-Ch-Ua': '"Chromium";v="136", "Not_A Brand";v="24", "Google Chrome";v="136"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"macOS"',
@@ -252,9 +259,10 @@ function extractProfileDataFromHtml(html: string, pseudo: string): HtmlProfileDa
 }
 
 async function fetchAuthenticatedPage(
-  pseudo: string
+  pseudo: string,
+  creds?: LinkedInCredentials
 ): Promise<{ html: string; error?: string } | { html?: undefined; error: string }> {
-  const headers = buildBrowserHeaders();
+  const headers = buildBrowserHeaders(creds);
   const url = `https://www.linkedin.com/in/${pseudo}/`;
   const res = await fetch(url, { headers, redirect: 'manual' });
 
@@ -276,10 +284,10 @@ async function fetchAuthenticatedPage(
 
 // --- Step 3 & 4: Voyager API calls ---
 
-function buildVoyagerHeaders(pseudo: string): Record<string, string> {
-  const jsid = getJsessionId();
+function buildVoyagerHeaders(pseudo: string, creds?: LinkedInCredentials): Record<string, string> {
+  const jsid = getJsessionId(creds);
   return {
-    Cookie: `li_at=${getLiAt()}; JSESSIONID="${jsid}"; lang=v=2&lang=fr-fr`,
+    Cookie: `li_at=${getLiAt(creds)}; JSESSIONID="${jsid}"; lang=v=2&lang=fr-fr`,
     'Csrf-Token': jsid,
     'X-Li-Lang': 'fr_FR',
     'X-Restli-Protocol-Version': '2.0.0',
@@ -396,7 +404,8 @@ async function fetchPositionDetails(
 // --- Main scrape function ---
 
 export async function scrapeLinkedInProfile(
-  linkedinPseudo: string
+  linkedinPseudo: string,
+  creds?: LinkedInCredentials
 ): Promise<{ success: true; data: LinkedInScrapedData } | { success: false; error: string; partialData?: Partial<LinkedInScrapedData> }> {
   try {
     const allAvatarCandidates: string[] = [];
@@ -406,7 +415,7 @@ export async function scrapeLinkedInProfile(
     if (publicAvatar) allAvatarCandidates.push(publicAvatar);
 
     // 2. Authenticated HTML page (location + avatar from entities)
-    const pageResult = await fetchAuthenticatedPage(linkedinPseudo);
+    const pageResult = await fetchAuthenticatedPage(linkedinPseudo, creds);
     if (pageResult.error && !pageResult.html) {
       return {
         success: false,
@@ -422,7 +431,7 @@ export async function scrapeLinkedInProfile(
 
     // 3. GraphQL call -> positionUrn + avatar candidates
     await randomDelay(DELAY_MS);
-    const voyagerHeaders = buildVoyagerHeaders(linkedinPseudo);
+    const voyagerHeaders = buildVoyagerHeaders(linkedinPseudo, creds);
     const gql = await fetchPositionUrn(linkedinPseudo, voyagerHeaders);
 
     for (const c of gql.avatarCandidates) {
