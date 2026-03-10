@@ -32,6 +32,13 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
 
+  // Parse mode: "new" (default) = only unscraped, "all" = rescrape everyone
+  let mode: 'new' | 'all' = 'new';
+  try {
+    const body = await req.json().catch(() => ({}));
+    if (body.mode === 'all') mode = 'all';
+  } catch { /* default to 'new' */ }
+
   // Load LinkedIn credentials from DB (fallback to env)
   const { liAt, jsessionId } = await getLinkedInCredentials();
   if (!liAt) {
@@ -42,12 +49,17 @@ export async function POST(req: Request) {
   }
   const creds: LinkedInCredentials = { liAt, jsessionId };
 
-  const { data: profiles, error: fetchError } = await admin
+  let query = admin
     .from('profiles')
     .select('id, first_name, last_name, linkedin_pseudo')
-    .eq('is_scrapped', false)
     .not('linkedin_pseudo', 'is', null)
     .not('linkedin_pseudo', 'eq', '');
+
+  if (mode === 'new') {
+    query = query.eq('is_scrapped', false);
+  }
+
+  const { data: profiles, error: fetchError } = await query;
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
   if (!profiles || profiles.length === 0) {
@@ -61,7 +73,7 @@ export async function POST(req: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
 
-      send({ type: 'start', total: profiles.length });
+      send({ type: 'start', total: profiles.length, mode });
 
       const errors: string[] = [];
       let succeeded = 0;

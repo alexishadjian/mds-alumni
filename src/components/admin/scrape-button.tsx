@@ -1,11 +1,23 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Linkedin, Loader2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import {
+  Linkedin,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+  ChevronDown,
+  UserPlus,
+  RefreshCw,
+} from 'lucide-react';
+
+type ScrapeMode = 'new' | 'all';
 
 interface ProgressState {
   phase: 'scraping' | 'done' | 'error';
+  mode: ScrapeMode;
   current: number;
   total: number;
   name: string;
@@ -17,16 +29,45 @@ interface ProgressState {
 
 export function ScrapeButton() {
   const [progress, setProgress] = useState<ProgressState | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleScrape = useCallback(async () => {
-    setProgress({ phase: 'scraping', current: 0, total: 0, name: '', succeeded: 0, failed: 0, errors: [] });
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
+
+  const handleScrape = useCallback(async (mode: ScrapeMode) => {
+    setMenuOpen(false);
+    setProgress({
+      phase: 'scraping',
+      mode,
+      current: 0,
+      total: 0,
+      name: '',
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+    });
 
     try {
-      const res = await fetch('/api/scrape/linkedin', { method: 'POST' });
+      const res = await fetch('/api/scrape/linkedin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setProgress((p) => p ? { ...p, phase: 'error', errorMessage: data.error || `HTTP ${res.status}` } : null);
+        setProgress((p) =>
+          p ? { ...p, phase: 'error', errorMessage: data.error || `HTTP ${res.status}` } : null
+        );
         return;
       }
 
@@ -35,6 +76,7 @@ export function ScrapeButton() {
         const data = await res.json();
         setProgress({
           phase: 'done',
+          mode,
           current: data.total || 0,
           total: data.total || 0,
           name: '',
@@ -67,63 +109,170 @@ export function ScrapeButton() {
             const event = JSON.parse(dataLine.slice(6));
 
             if (event.type === 'start') {
-              setProgress((p) => p ? { ...p, total: event.total } : null);
+              setProgress((p) => (p ? { ...p, total: event.total } : null));
             } else if (event.type === 'progress') {
-              setProgress((p) => p ? { ...p, current: event.current, name: event.name } : null);
+              setProgress((p) => (p ? { ...p, current: event.current, name: event.name } : null));
             } else if (event.type === 'done') {
               setProgress((p) => {
                 if (!p) return null;
                 return {
                   ...p,
                   current: event.current,
-                  succeeded: event.status === 'success' || event.status === 'partial' ? p.succeeded + 1 : p.succeeded,
+                  succeeded:
+                    event.status === 'success' || event.status === 'partial'
+                      ? p.succeeded + 1
+                      : p.succeeded,
                   failed: event.status === 'error' ? p.failed + 1 : p.failed,
                 };
               });
             } else if (event.type === 'error') {
-              setProgress((p) => p ? { ...p, errors: [...p.errors, `${event.name}: ${event.error}`] } : null);
+              setProgress((p) =>
+                p ? { ...p, errors: [...p.errors, `${event.name}: ${event.error}`] } : null
+              );
             } else if (event.type === 'complete') {
               await new Promise((r) => setTimeout(r, 1000));
-              setProgress((p) => p ? {
-                ...p,
-                phase: 'done',
-                succeeded: event.succeeded,
-                failed: event.failed,
-                errors: event.errors || [],
-              } : null);
+              setProgress((p) =>
+                p
+                  ? {
+                      ...p,
+                      phase: 'done',
+                      succeeded: event.succeeded,
+                      failed: event.failed,
+                      errors: event.errors || [],
+                    }
+                  : null
+              );
             }
-          } catch { /* skip malformed */ }
+          } catch {
+            /* skip malformed */
+          }
         }
       }
     } catch {
-      setProgress((p) => p ? { ...p, phase: 'error', errorMessage: 'Erreur réseau' } : null);
+      setProgress((p) => (p ? { ...p, phase: 'error', errorMessage: 'Erreur réseau' } : null));
     }
   }, []);
 
   const dismiss = () => setProgress(null);
   const isLoading = progress?.phase === 'scraping';
 
-  return (
-    <div className="relative">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleScrape}
-        disabled={isLoading}
-        className="h-9 gap-1.5 rounded-xl border-black/8 bg-white text-xs font-semibold hover:border-[#2CB8C5]/40 hover:bg-[#2CB8C5]/5 hover:text-[#2CB8C5]"
-      >
-        {isLoading ? (
-          <Loader2 className="size-3.5 animate-spin" />
-        ) : (
-          <Linkedin className="size-3.5" />
-        )}
-        {isLoading
-          ? progress.total > 0
-            ? `${progress.succeeded + progress.failed}/${progress.total}`
-            : 'Chargement…'
-          : 'Scraper LinkedIn'}
-      </Button>
+  const modeLabel = progress?.mode === 'all' ? 'Mise à jour complète' : 'Scraping';
 
+  return (
+    <div className="relative" ref={menuRef}>
+      {/* Split button */}
+      <div className="flex">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => (isLoading ? undefined : handleScrape('new'))}
+          disabled={isLoading}
+          className="h-9 gap-1.5 rounded-l-xl rounded-r-none border-black/8 border-r-black/4 bg-white text-xs font-semibold hover:border-[#2CB8C5]/40 hover:bg-[#2CB8C5]/5 hover:text-[#2CB8C5]"
+        >
+          {isLoading ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Linkedin className="size-3.5" />
+          )}
+          {isLoading
+            ? progress.total > 0
+              ? `${progress.succeeded + progress.failed}/${progress.total}`
+              : 'Chargement…'
+            : 'Scraper LinkedIn'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMenuOpen(!menuOpen)}
+          disabled={isLoading}
+          className="h-9 rounded-l-none rounded-r-xl border-l-0 border-black/8 bg-white px-2 hover:border-[#2CB8C5]/40 hover:bg-[#2CB8C5]/5 hover:text-[#2CB8C5]"
+        >
+          <ChevronDown className="size-3.5" />
+        </Button>
+      </div>
+
+      {/* Mode dropdown */}
+      {menuOpen && !isLoading && (
+        <div className="absolute right-0 top-full z-50 mt-1.5 w-72 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+          <div className="px-3 pb-1 pt-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#3C3C3B]/35">
+              Mode de scraping
+            </p>
+          </div>
+          <div className="p-1.5">
+            <button
+              onClick={() => handleScrape('new')}
+              className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#2CB8C5]/5"
+            >
+              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#2CB8C5]/10">
+                <UserPlus className="size-4 text-[#2CB8C5]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#3C3C3B]">Nouveaux profils</p>
+                <p className="mt-0.5 text-xs text-[#3C3C3B]/45">
+                  Scrape uniquement les profils jamais scrapés
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleScrape('all')}
+              className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#662483]/5"
+            >
+              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#662483]/10">
+                <RefreshCw className="size-4 text-[#662483]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#3C3C3B]">Tous les profils</p>
+                <p className="mt-0.5 text-xs text-[#3C3C3B]/45">
+                  Re-scrape tout le monde pour mettre à jour les infos
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Progress panel (during scraping) */}
+      {isLoading && progress.total > 0 && (() => {
+        const completed = progress.succeeded + progress.failed;
+        const pct = Math.round((completed / progress.total) * 100);
+        return (
+          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-black/8 bg-white p-4 shadow-xl">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Loader2 className="size-4 shrink-0 animate-spin text-[#2CB8C5]" />
+                <div>
+                  <p className="text-sm font-semibold text-[#3C3C3B]">
+                    {modeLabel} en cours… {progress.current}/{progress.total}
+                  </p>
+                  {progress.name && (
+                    <p className="mt-0.5 text-xs text-[#3C3C3B]/50">{progress.name}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#3C3C3B]/5">
+                <div
+                  className="h-full rounded-full bg-[#2CB8C5] transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between text-[10px] text-[#3C3C3B]/40">
+                <span>
+                  {progress.succeeded} succès
+                  {progress.failed > 0
+                    ? `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}`
+                    : ''}
+                </span>
+                <span>{pct}%</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Result panel (done/error) */}
       {progress && progress.phase !== 'scraping' && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-black/8 bg-white p-4 shadow-xl">
           <button
@@ -146,10 +295,13 @@ export function ScrapeButton() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
                 <div>
-                  <p className="text-sm font-semibold text-[#3C3C3B]">Scraping terminé</p>
+                  <p className="text-sm font-semibold text-[#3C3C3B]">
+                    {modeLabel} terminé{progress.mode === 'all' ? 'e' : ''}
+                  </p>
                   <p className="mt-0.5 text-xs text-[#3C3C3B]/50">
                     {progress.succeeded} profil{progress.succeeded > 1 ? 's' : ''} mis à jour
-                    {progress.failed > 0 && `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}`}
+                    {progress.failed > 0 &&
+                      `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}`}
                   </p>
                 </div>
               </div>
@@ -178,40 +330,6 @@ export function ScrapeButton() {
           )}
         </div>
       )}
-
-      {isLoading && progress.total > 0 && (() => {
-        const completed = progress.succeeded + progress.failed;
-        const pct = Math.round((completed / progress.total) * 100);
-        return (
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-black/8 bg-white p-4 shadow-xl">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Loader2 className="size-4 shrink-0 animate-spin text-[#2CB8C5]" />
-                <div>
-                  <p className="text-sm font-semibold text-[#3C3C3B]">
-                    Scraping en cours… {progress.current}/{progress.total}
-                  </p>
-                  {progress.name && (
-                    <p className="mt-0.5 text-xs text-[#3C3C3B]/50">{progress.name}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-2 w-full overflow-hidden rounded-full bg-[#3C3C3B]/5">
-                <div
-                  className="h-full rounded-full bg-[#2CB8C5] transition-all duration-500"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between text-[10px] text-[#3C3C3B]/40">
-                <span>{progress.succeeded} succès{progress.failed > 0 ? `, ${progress.failed} échec${progress.failed > 1 ? 's' : ''}` : ''}</span>
-                <span>{pct}%</span>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
