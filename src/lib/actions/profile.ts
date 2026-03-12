@@ -6,6 +6,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { cookies } from 'next/headers';
 import { filterProfileByPrivacy } from '@/types';
 import type { Profile } from '@/types';
+import { local } from '@/lib/local-data';
 
 type ActionResult = { success: boolean; error?: string };
 
@@ -18,90 +19,144 @@ export interface DirectoryFilters {
 }
 
 export const getProfilesForDirectory = async (filters: DirectoryFilters = {}): Promise<Profile[]> => {
-  const supabase = createClient(await cookies());
-  const { data: { user } } = await supabase.auth.getUser();
-  const isAuthenticated = !!user;
+  try {
+    const supabase = createClient(await cookies());
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAuthenticated = !!user;
 
-  const admin = createAdminClient();
-  let query = admin
-    .from('profiles')
-    .select(`*, promotion_year(year, label), programs(name, slug)`)
-    .neq('role', 'admin')
-    .neq('role', 'viewer')
-    .order('last_name');
+    const admin = createAdminClient();
+    let query = admin
+      .from('profiles')
+      .select(`*, promotion_year(year, label), programs(name, slug)`)
+      .neq('role', 'admin')
+      .neq('role', 'viewer')
+      .order('last_name');
 
-  if (filters.search?.trim()) {
-    const s = `%${filters.search.trim()}%`;
-    query = query.or(`first_name.ilike.${s},last_name.ilike.${s},current_job_title.ilike.${s},current_company.ilike.${s}`);
+    if (filters.search?.trim()) {
+      const s = `%${filters.search.trim()}%`;
+      query = query.or(`first_name.ilike.${s},last_name.ilike.${s},current_job_title.ilike.${s},current_company.ilike.${s}`);
+    }
+    if (filters.promotion) query = query.eq('promotion_year_id', filters.promotion);
+    if (filters.program) query = query.eq('program_id', filters.program);
+    if (filters.city) query = query.ilike('location_city', filters.city);
+    if (filters.country) query = query.ilike('location_country', filters.country);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return (data ?? []).map((p) => filterProfileByPrivacy(p as Profile, isAuthenticated));
+  } catch (e) {
+    console.warn('[getProfilesForDirectory] Supabase indisponible, fallback local', e);
+    return getProfilesFromLocal(filters);
   }
-  if (filters.promotion) query = query.eq('promotion_year_id', filters.promotion);
-  if (filters.program) query = query.eq('program_id', filters.program);
-  if (filters.city) query = query.ilike('location_city', filters.city);
-  if (filters.country) query = query.ilike('location_country', filters.country);
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('[getProfilesForDirectory]', error.message);
-    return [];
-  }
-  const profiles = (data ?? []).map((p) => filterProfileByPrivacy(p as Profile, isAuthenticated));
-  return profiles;
 };
 
+function getProfilesFromLocal(filters: DirectoryFilters): Profile[] {
+  const promotions = local.promotions();
+  let rows = local.profiles();
+
+  if (filters.search?.trim()) {
+    const s = filters.search.trim().toLowerCase();
+    rows = rows.filter((p) =>
+      [p.first_name, p.last_name, p.current_job_title, p.current_company]
+        .some((v) => v?.toLowerCase().includes(s))
+    );
+  }
+  if (filters.promotion) rows = rows.filter((p) => String(p.promotion_year_id) === filters.promotion);
+  if (filters.city) rows = rows.filter((p) => p.location_city?.toLowerCase() === filters.city!.toLowerCase());
+  if (filters.country) rows = rows.filter((p) => p.location_country?.toLowerCase() === filters.country!.toLowerCase());
+
+  return rows.map((p) => {
+    const promo = promotions.find((pr) => pr.id === p.promotion_year_id);
+    return filterProfileByPrivacy({
+      ...p,
+      promotion_year: promo ? { year: promo.year, label: promo.label } : null,
+      programs: null,
+    } as Profile, false);
+  });
+}
+
 export const getDirectoryFilterOptions = async () => {
-  const admin = createAdminClient();
+  try {
+    const admin = createAdminClient();
 
-  const [promotionsRes, programsRes, citiesRes, countriesRes] = await Promise.all([
-    admin.from('promotion_year').select('id, year, label').order('year', { ascending: false }),
-    admin.from('programs').select('id, name').order('name'),
-    admin.from('profiles').select('location_city').neq('role', 'admin').not('location_city', 'is', null).not('location_city', 'eq', ''),
-    admin.from('profiles').select('location_country').neq('role', 'admin').not('location_country', 'is', null).not('location_country', 'eq', ''),
-  ]);
+    const [promotionsRes, programsRes, citiesRes, countriesRes] = await Promise.all([
+      admin.from('promotion_year').select('id, year, label').order('year', { ascending: false }),
+      admin.from('programs').select('id, name').order('name'),
+      admin.from('profiles').select('location_city').neq('role', 'admin').not('location_city', 'is', null).not('location_city', 'eq', ''),
+      admin.from('profiles').select('location_country').neq('role', 'admin').not('location_country', 'is', null).not('location_country', 'eq', ''),
+    ]);
 
-  const cities = [...new Set((citiesRes.data ?? []).map((p) => p.location_city as string))].sort();
-  const countries = [...new Set((countriesRes.data ?? []).map((p) => p.location_country as string))].sort();
+    if (promotionsRes.error) throw promotionsRes.error;
 
-  return {
-    promotions: (promotionsRes.data ?? []) as { id: number; year: number; label: string | null }[],
-    programs: (programsRes.data ?? []) as { id: number; name: string }[],
-    cities,
-    countries,
-  };
+    const cities = [...new Set((citiesRes.data ?? []).map((p) => p.location_city as string))].sort();
+    const countries = [...new Set((countriesRes.data ?? []).map((p) => p.location_country as string))].sort();
+
+    return {
+      promotions: (promotionsRes.data ?? []) as { id: number; year: number; label: string | null }[],
+      programs: (programsRes.data ?? []) as { id: number; name: string }[],
+      cities,
+      countries,
+    };
+  } catch (e) {
+    console.warn('[getDirectoryFilterOptions] Supabase indisponible, fallback local', e);
+    const profiles = local.profiles();
+    return {
+      promotions: local.promotions().map((p) => ({ id: p.id, year: p.year, label: p.label })),
+      programs: [] as { id: number; name: string }[],
+      cities: [...new Set(profiles.map((p) => p.location_city).filter(Boolean) as string[])].sort(),
+      countries: [...new Set(profiles.map((p) => p.location_country).filter(Boolean) as string[])].sort(),
+    };
+  }
 };
 
 export const getProfileById = async (id: string): Promise<Profile | null> => {
-  const supabase = createClient(await cookies());
-  const { data: { user } } = await supabase.auth.getUser();
-  const isAuthenticated = !!user;
+  try {
+    const supabase = createClient(await cookies());
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAuthenticated = !!user;
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*, promotion_year(year, label), programs(name, slug)')
-    .eq('id', id)
-    .single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*, promotion_year(year, label), programs(name, slug)')
+      .eq('id', id)
+      .single();
 
-  if (error || !data) return null;
+    if (error) throw error;
+    if (!data) return null;
 
-  const { data: edu } = await supabase
-    .from('education_experiences')
-    .select('*')
-    .eq('profile_id', id)
-    .order('start_year', { ascending: false });
+    const { data: edu } = await supabase
+      .from('education_experiences')
+      .select('*')
+      .eq('profile_id', id)
+      .order('start_year', { ascending: false });
 
-  const { data: pro } = await supabase
-    .from('professional_experiences')
-    .select('*')
-    .eq('profile_id', id)
-    .order('start_date', { ascending: false });
+    const { data: pro } = await supabase
+      .from('professional_experiences')
+      .select('*')
+      .eq('profile_id', id)
+      .order('start_date', { ascending: false });
 
-  const profile = {
-    ...data,
-    education_experiences: edu ?? [],
-    professional_experiences: pro ?? [],
-  } as Profile;
+    const profile = {
+      ...data,
+      education_experiences: edu ?? [],
+      professional_experiences: pro ?? [],
+    } as Profile;
 
-  return filterProfileByPrivacy(profile, isAuthenticated);
+    return filterProfileByPrivacy(profile, isAuthenticated);
+  } catch (e) {
+    console.warn('[getProfileById] Supabase indisponible, fallback local', e);
+    const p = local.profiles().find((pr) => pr.id === id);
+    if (!p) return null;
+    const promo = local.promotions().find((pr) => pr.id === p.promotion_year_id);
+    return filterProfileByPrivacy({
+      ...p,
+      promotion_year: promo ? { year: promo.year, label: promo.label } : null,
+      programs: null,
+      education_experiences: local.educationExperiences().filter((e) => e.profile_id === id),
+      professional_experiences: local.professionalExperiences().filter((e) => e.profile_id === id),
+    } as Profile, false);
+  }
 };
 
 const canEditProfile = async (supabase: Awaited<ReturnType<typeof createClient>>, profileId: string): Promise<boolean> => {
