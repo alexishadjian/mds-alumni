@@ -1,13 +1,14 @@
 /**
- * Fallback : read local JSON data (db-export/data/)
- * Used only if Supabase is unavailable.
+ * Fallback : lecture des données JSON locales (db-export/data/)
+ * Utilisé uniquement si Supabase est indisponible.
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
 const DATA_DIR = join(process.cwd(), 'db-export', 'data');
 
-function load<T>(file: string): T[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function load(file: string): any[] {
   try {
     return JSON.parse(readFileSync(join(DATA_DIR, file), 'utf-8'));
   } catch {
@@ -15,7 +16,8 @@ function load<T>(file: string): T[] {
   }
 }
 
-const cache: Record<string, unknown[]> = {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const cache: Record<string, any[]> = {};
 
 export const local = {
   profiles: () => (cache.profiles ??= load('profiles.json')),

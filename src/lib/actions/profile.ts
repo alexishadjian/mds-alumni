@@ -53,8 +53,7 @@ export const getProfilesForDirectory = async (filters: DirectoryFilters = {}): P
 
 function getProfilesFromLocal(filters: DirectoryFilters): Profile[] {
   const promotions = local.promotions();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let rows = local.profiles() as any[];
+  let rows = local.profiles();
 
   if (filters.search?.trim()) {
     const s = filters.search.trim().toLowerCase();
@@ -68,7 +67,7 @@ function getProfilesFromLocal(filters: DirectoryFilters): Profile[] {
   if (filters.country) rows = rows.filter((p) => p.location_country?.toLowerCase() === filters.country!.toLowerCase());
 
   return rows.map((p) => {
-    const promo = promotions.find((pr: { id: number }) => pr.id === p.promotion_year_id);
+    const promo = promotions.find((pr) => pr.id === p.promotion_year_id);
     return filterProfileByPrivacy({
       ...p,
       promotion_year: promo ? { year: promo.year, label: promo.label } : null,
@@ -101,10 +100,9 @@ export const getDirectoryFilterOptions = async () => {
     };
   } catch (e) {
     console.warn('[getDirectoryFilterOptions] Supabase indisponible, fallback local', e);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profiles = local.profiles() as any[];
+    const profiles = local.profiles();
     return {
-      promotions: local.promotions().map((p: { id: number; year: number; label: string }) => ({ id: p.id, year: p.year, label: p.label })),
+      promotions: local.promotions().map((p) => ({ id: p.id, year: p.year, label: p.label })),
       programs: [] as { id: number; name: string }[],
       cities: [...new Set(profiles.map((p) => p.location_city).filter(Boolean) as string[])].sort(),
       countries: [...new Set(profiles.map((p) => p.location_country).filter(Boolean) as string[])].sort(),
@@ -148,18 +146,15 @@ export const getProfileById = async (id: string): Promise<Profile | null> => {
     return filterProfileByPrivacy(profile, isAuthenticated);
   } catch (e) {
     console.warn('[getProfileById] Supabase indisponible, fallback local', e);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const p = (local.profiles() as any[]).find((pr) => pr.id === id);
+    const p = local.profiles().find((pr) => pr.id === id);
     if (!p) return null;
-    const promo = local.promotions().find((pr: { id: number }) => pr.id === p.promotion_year_id);
+    const promo = local.promotions().find((pr) => pr.id === p.promotion_year_id);
     return filterProfileByPrivacy({
       ...p,
       promotion_year: promo ? { year: promo.year, label: promo.label } : null,
       programs: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      education_experiences: (local.educationExperiences() as any[]).filter((e) => e.profile_id === id),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      professional_experiences: (local.professionalExperiences() as any[]).filter((e) => e.profile_id === id),
+      education_experiences: local.educationExperiences().filter((e) => e.profile_id === id),
+      professional_experiences: local.professionalExperiences().filter((e) => e.profile_id === id),
     } as Profile, false);
   }
 };

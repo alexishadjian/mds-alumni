@@ -36,8 +36,7 @@ export default async function Home() {
     };
   } catch (e) {
     console.warn('[Home] Supabase indisponible, fallback local', e);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profiles = local.profiles() as any[];
+    const profiles = local.profiles();
     stats = {
       alumniCount: profiles.length,
       promotionCount: local.promotions().length,
